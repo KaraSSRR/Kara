@@ -149,27 +149,9 @@ final class BattleEngine {
             unset($m);
         }
 
-        // Status move MVP: slot 6 (Low Call) => target atk -1
         $cat = strtolower((string)($move['category'] ?? ''));
-        if ($cat === 'status') {
-            $moveId = (int)($move['move_id'] ?? 0);
-            if ($moveId === 6) {
-                $state[$defSide]['boosts']['atk'] = max(-6, (int)($state[$defSide]['boosts']['atk'] ?? 0) - 1);
-                $logs[] = self::log($turn, $seq++, "{$defSide}'s Attack fell!", ['side' => $defSide, 'stat' => 'atk', 'stage' => (int)$state[$defSide]['boosts']['atk']]);
-            } else {
-                $logs[] = self::log($turn, $seq++, "But nothing happened.", ['move' => $moveName]);
-            }
-            return ['state' => $state, 'logs' => $logs, 'seq' => $seq];
-        }
 
-        $power = $move['power'] ?? null;
-        if ($power === null || (int)$power <= 0) {
-            $logs[] = self::log($turn, $seq++, "But it failed.", ['move' => $moveName]);
-            return ['state' => $state, 'logs' => $logs, 'seq' => $seq];
-        }
-        $power = (int)$power;
-
-        // Accuracy check
+        // Accuracy check (for both status and damage moves)
         $baseAcc = $move['accuracy'] ?? null;
         if ($baseAcc !== null) {
             $accStage = (int)($state[$atkSide]['boosts']['accuracy'] ?? 0);
@@ -185,6 +167,29 @@ final class BattleEngine {
                 return ['state' => $state, 'logs' => $logs, 'seq' => $seq];
             }
         }
+
+        // Status move MVP: slot 6 (Low Call) => target atk -1 + generic status inflict
+        if ($cat === 'status') {
+            $moveId = (int)($move['move_id'] ?? 0);
+            if ($moveId === 6) {
+                $state[$defSide]['boosts']['atk'] = max(-6, (int)($state[$defSide]['boosts']['atk'] ?? 0) - 1);
+                $logs[] = self::log($turn, $seq++, "{$defSide}'s Attack fell!", ['side' => $defSide, 'stat' => 'atk', 'stage' => (int)$state[$defSide]['boosts']['atk']]);
+            }
+
+            $state = self::applyStatusInflict($state, $atkSide, $defSide, $move, $rng, $turn, $seq, $logs);
+            $seq = count($logs);
+            if ($moveId !== 6 && empty($move['status_inflict'])) {
+                $logs[] = self::log($turn, $seq++, "But nothing happened.", ['move' => $moveName]);
+            }
+            return ['state' => $state, 'logs' => $logs, 'seq' => $seq];
+        }
+
+        $power = $move['power'] ?? null;
+        if ($power === null || (int)$power <= 0) {
+            $logs[] = self::log($turn, $seq++, "But it failed.", ['move' => $moveName]);
+            return ['state' => $state, 'logs' => $logs, 'seq' => $seq];
+        }
+        $power = (int)$power;
 
         // Critical
         $crit = ($rng->rangeInt(1, 24) === 1);
@@ -244,22 +249,7 @@ final class BattleEngine {
         }
 
         // Status infliction (if any)
-        if ((int)$state[$defSide]['hp'] > 0) {
-            $inflict = strtolower((string)($move['status_inflict'] ?? ''));
-            $chance = (int)($move['status_chance'] ?? 0);
-            if ($inflict !== '' && $chance > 0 && self::canReceiveStatus($state[$defSide], $inflict)) {
-                $roll = $rng->rangeInt(1, 100);
-                if ($roll <= $chance) {
-                    $state[$defSide]['status']['major'] = $inflict;
-                    if ($inflict === 'sleep') $state[$defSide]['status']['turns'] = $rng->rangeInt(1, 3);
-                    $logs[] = self::log($turn, $seq++, "{$defSide} is afflicted with {$inflict}.", [
-                        'side' => $defSide,
-                        'status' => $inflict,
-                        'roll' => $roll,
-                    ]);
-                }
-            }
-        }
+        $state = self::applyStatusInflict($state, $atkSide, $defSide, $move, $rng, $turn, $seq, $logs);
 
         return ['state' => $state, 'logs' => $logs, 'seq' => $seq];
     }
@@ -279,6 +269,27 @@ final class BattleEngine {
         $cur = $side['status']['major'] ?? null;
         if ($cur) return false;
         return in_array($status, ['burn', 'poison', 'paralysis', 'sleep', 'freeze'], true);
+    }
+
+    private static function applyStatusInflict(array $state, string $atkSide, string $defSide, array $move, Rng $rng, int $turn, int $seq, array &$logs): array {
+        if ((int)($state[$defSide]['hp'] ?? 0) <= 0) return $state;
+        $inflict = strtolower((string)($move['status_inflict'] ?? ''));
+        $chance = (int)($move['status_chance'] ?? 0);
+        if ($inflict === '' || $chance <= 0) return $state;
+        if (!self::canReceiveStatus($state[$defSide], $inflict)) return $state;
+
+        $roll = $rng->rangeInt(1, 100);
+        if ($roll <= $chance) {
+            $state[$defSide]['status']['major'] = $inflict;
+            if ($inflict === 'sleep') $state[$defSide]['status']['turns'] = $rng->rangeInt(1, 3);
+            $logs[] = self::log($turn, $seq++, "{$defSide} is afflicted with {$inflict}.", [
+                'side' => $defSide,
+                'status' => $inflict,
+                'roll' => $roll,
+            ]);
+        }
+
+        return $state;
     }
 
     private static function canAct(array &$state, string $side, int $turn, int $seq, array &$logs, Rng $rng): bool {

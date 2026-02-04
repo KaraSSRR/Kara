@@ -133,7 +133,7 @@ final class BattleService {
         $moveIds = [1, $sig, 5, 6];
 
         $in = implode(',', array_fill(0, count($moveIds), '?'));
-        $st = $pdo->prepare("SELECT id AS move_id, name, type, category, power, accuracy, pp, priority FROM moves WHERE id IN ($in)");
+        $st = $pdo->prepare("SELECT id AS move_id, name, type, category, power, accuracy, status_inflict, status_chance, pp, priority FROM moves WHERE id IN ($in)");
         $st->execute($moveIds);
         $rows = $st->fetchAll();
 
@@ -156,6 +156,8 @@ final class BattleService {
                 'category' => (string)$m['category'],
                 'power' => $m['power'] === null ? null : (int)$m['power'],
                 'accuracy' => $m['accuracy'] === null ? null : (int)$m['accuracy'],
+                'status_inflict' => $m['status_inflict'] === null ? null : (string)$m['status_inflict'],
+                'status_chance' => $m['status_chance'] === null ? null : (int)$m['status_chance'],
                 'pp' => $pp,
                 'priority' => (int)$m['priority'],
             ];
@@ -207,6 +209,8 @@ final class BattleService {
                 'category' => (string)$m['category'],
                 'power' => $m['power'] === null ? null : (int)$m['power'],
                 'accuracy' => $m['accuracy'] === null ? null : (int)$m['accuracy'],
+                'status_inflict' => $m['status_inflict'] === null ? null : (string)$m['status_inflict'],
+                'status_chance' => $m['status_chance'] === null ? null : (int)$m['status_chance'],
                 'priority' => (int)$m['priority'],
             ], $c['moves'] ?? [])),
         ];

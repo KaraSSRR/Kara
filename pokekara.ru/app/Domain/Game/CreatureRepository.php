@@ -112,7 +112,8 @@ final class CreatureRepository {
         $pdo = Database::pdo();
         $st = $pdo->prepare('
             SELECT cm.slot, cm.pp_current, cm.pp_max,
-                   m.id AS move_id, m.name, m.type, m.category, m.power, m.accuracy, m.pp, m.priority
+                   m.id AS move_id, m.name, m.type, m.category, m.power, m.accuracy,
+                   m.status_inflict, m.status_chance, m.pp, m.priority
             FROM creature_moves cm
             JOIN moves m ON m.id = cm.move_id
             WHERE cm.user_creature_id = ?
