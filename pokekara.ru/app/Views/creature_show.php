@@ -155,5 +155,29 @@ $pct = max(0, min(100, $pct));
         <p class="muted"><?= e((string)$c['ability_description']) ?></p>
       </div>
     <?php endif; ?>
+
+    <div class="card soft" style="margin-top:12px">
+      <div class="kicker">Эволюции</div>
+      <?php if (empty($c['evolutions'])): ?>
+        <p class="muted">Эволюций пока нет или условия не заданы.</p>
+      <?php else: ?>
+        <ul class="list">
+          <?php foreach ($c['evolutions'] as $evo): ?>
+            <li>
+              <strong><?= e((string)$evo['to_species_name']) ?></strong>
+              <?php if (!empty($evo['condition_text'])): ?>
+                <span class="muted">· <?= e((string)$evo['condition_text']) ?></span>
+              <?php elseif ($evo['method'] === 'level' && $evo['min_level']): ?>
+                <span class="muted">· Уровень <?= e((string)$evo['min_level']) ?></span>
+              <?php elseif ($evo['method'] === 'item' && !empty($evo['item_name'])): ?>
+                <span class="muted">· Предмет: <?= e((string)$evo['item_name']) ?></span>
+              <?php else: ?>
+                <span class="muted">· Способ: <?= e((string)$evo['method']) ?></span>
+              <?php endif; ?>
+            </li>
+          <?php endforeach; ?>
+        </ul>
+      <?php endif; ?>
+    </div>
   </section>
 </div>

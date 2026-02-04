@@ -102,6 +102,7 @@ final class CreatureRepository {
         $row['status_arr'] = self::decodeJson($row['status'] ?? null);
 
         $row['moves'] = $this->movesForCreature($creatureId);
+        $row['evolutions'] = $this->listEvolutionsForSpecies((int)$row['species_id']);
 
         return $row;
     }
@@ -192,6 +193,32 @@ final class CreatureRepository {
             $pdo->rollBack();
             throw $e;
         }
+    }
+
+    /** @return array<int, array{to_species_id:int,to_species_name:string,method:string,min_level:int|null,item_name:string|null,condition_text:string|null}> */
+    public function listEvolutionsForSpecies(int $speciesId): array {
+        $pdo = Database::pdo();
+        $st = $pdo->prepare('
+            SELECT se.to_species_id, s.name AS to_species_name,
+                   se.method, se.min_level, i.name AS item_name, se.condition_text
+            FROM species_evolutions se
+            JOIN species s ON s.id = se.to_species_id
+            LEFT JOIN items i ON i.id = se.item_id
+            WHERE se.from_species_id = ?
+            ORDER BY se.min_level ASC, se.id ASC
+        ');
+        $st->execute([$speciesId]);
+        $rows = $st->fetchAll();
+        foreach ($rows as &$row) {
+            $row['to_species_id'] = (int)$row['to_species_id'];
+            $row['to_species_name'] = (string)$row['to_species_name'];
+            $row['method'] = (string)$row['method'];
+            $row['min_level'] = $row['min_level'] !== null ? (int)$row['min_level'] : null;
+            $row['item_name'] = $row['item_name'] !== null ? (string)$row['item_name'] : null;
+            $row['condition_text'] = $row['condition_text'] !== null ? (string)$row['condition_text'] : null;
+        }
+        unset($row);
+        return $rows;
     }
 
     private function ensureDefaultMoveset(int $creatureId, int $speciesId): void {

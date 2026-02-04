@@ -130,10 +130,11 @@ final class BattleEngine {
             unset($m);
         }
 
-        // Status move MVP: Growl => target atk -1
+        // Status move MVP: slot 6 (Low Call) => target atk -1
         $cat = strtolower((string)($move['category'] ?? ''));
         if ($cat === 'status') {
-            if (strtolower($moveName) === 'growl') {
+            $moveId = (int)($move['move_id'] ?? 0);
+            if ($moveId === 6) {
                 $state[$defSide]['boosts']['atk'] = max(-6, (int)($state[$defSide]['boosts']['atk'] ?? 0) - 1);
                 $logs[] = self::log($turn, $seq++, "{$defSide}'s Attack fell!", ['side' => $defSide, 'stat' => 'atk', 'stage' => (int)$state[$defSide]['boosts']['atk']]);
             } else {

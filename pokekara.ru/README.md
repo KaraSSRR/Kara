@@ -72,6 +72,7 @@ mysql -u root -p rpg_v2 < sql/migrations/001_init.sql
 mysql -u root -p rpg_v2 < sql/migrations/002_m2_showdown_battle.sql
 mysql -u root -p rpg_v2 < sql/migrations/003_m2_battle_location.sql
 mysql -u root -p rpg_v2 < sql/migrations/004_chat.sql
+mysql -u root -p rpg_v2 < sql/migrations/005_species_evolutions.sql
 ```
 
 3) Скопируй `.env`:
