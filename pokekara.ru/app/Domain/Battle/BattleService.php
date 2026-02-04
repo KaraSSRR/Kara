@@ -44,7 +44,9 @@ final class BattleService {
             'p2' => $this->toBattleSide('p2', $opponent),
         ];
 
-        return $this->battles->create($userId, $locationId, $playerCreatureId, $opponent, $seed, $state);
+        $battleId = $this->battles->create($userId, $locationId, $playerCreatureId, $opponent, $seed, $state);
+        $this->battles->addSnapshot($battleId, 0, $state);
+        return $battleId;
     }
 
     /** @return array<string,mixed> opponent snapshot */
@@ -164,6 +166,10 @@ final class BattleService {
 
     /** Normalize creature array to battle side structure. */
     private function toBattleSide(string $side, array $c): array {
+        $status = $c['status_arr'] ?? [];
+        if (!is_array($status)) $status = [];
+        $statusMajor = $status['major'] ?? null;
+        $statusTurns = $status['turns'] ?? 0;
         return [
             'side' => $side,
             'id' => $c['id'],
@@ -183,7 +189,10 @@ final class BattleService {
             'stats' => $c['final_stats'],
             'hp' => (int)$c['current_hp'],
             'max_hp' => (int)$c['max_hp'],
-            'status' => $c['status_arr'] ?? [],
+            'status' => [
+                'major' => $statusMajor,
+                'turns' => (int)$statusTurns,
+            ],
             'boosts' => [
                 'atk' => 0, 'def' => 0, 'spa' => 0, 'spd' => 0, 'spe' => 0,
                 'accuracy' => 0, 'evasion' => 0,
@@ -232,6 +241,7 @@ final class BattleService {
             $this->battles->addAction($battleId, $turn, 'p1', $p1Action);
             $this->battles->addAction($battleId, $turn, 'p2', $p2Action);
             $this->battles->addLogs($battleId, $res['logs']);
+            $this->battles->addSnapshot($battleId, $turn, $newState);
 
             $status = !empty($newState['finished']) ? 'finished' : 'active';
             $result = [];
@@ -262,6 +272,42 @@ final class BattleService {
         return [
             'battle' => $battle,
             'state' => $newState,
+        ];
+    }
+
+    public function forfeit(int $userId, int $battleId): array {
+        $battle = $this->battles->findByIdForUser($userId, $battleId);
+        if (!$battle) throw new \RuntimeException('Battle not found');
+        if ((string)$battle['status'] !== 'active') throw new \RuntimeException('Battle already finished');
+
+        $state = BattleRepository::decodeJson($battle['state']);
+        $turn = (int)($state['turn'] ?? 0);
+        $state['finished'] = true;
+        $state['winner'] = 'p2';
+        $state['forfeit'] = 'p1';
+
+        $pdo = Database::pdo();
+        $pdo->beginTransaction();
+        try {
+            $this->battles->addLogs($battleId, [
+                ['turn' => $turn, 'seq' => 0, 'message' => 'p1 forfeited.', 'payload' => ['side' => 'p1']],
+                ['turn' => $turn, 'seq' => 1, 'message' => 'Battle finished.', 'payload' => ['winner' => 'p2']],
+            ]);
+            $this->battles->addSnapshot($battleId, $turn, $state);
+            $this->battles->updateState($battleId, $turn, 'finished', $state, [
+                'winner' => 'p2',
+                'turns' => $turn,
+                'forfeit' => 'p1',
+            ], date('Y-m-d H:i:s'));
+            $pdo->commit();
+        } catch (\Throwable $e) {
+            $pdo->rollBack();
+            throw $e;
+        }
+
+        return [
+            'battle' => $this->battles->findByIdForUser($userId, $battleId),
+            'state' => $state,
         ];
     }
 

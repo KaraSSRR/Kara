@@ -50,15 +50,20 @@ ON DUPLICATE KEY UPDATE name=VALUES(name), description=VALUES(description);
 -- ---------------------------------------------------------------------------
 -- Moves (MVP)
 -- ---------------------------------------------------------------------------
-INSERT INTO moves (id, name, type, category, power, accuracy, pp, priority) VALUES
-(1, 'Force Tap', 'normal', 'physical', 40, 100, 35, 0),
-(2, 'Thorn Lash', 'grass', 'physical', 45, 100, 25, 0),
-(3, 'Cinder Flick', 'fire', 'special', 40, 100, 25, 0),
-(4, 'Stream Bolt', 'water', 'special', 40, 100, 25, 0),
-(5, 'Quickstep', 'normal', 'physical', 40, 100, 30, 1),
-(6, 'Low Call', 'normal', 'status', NULL, 100, 40, 0)
+INSERT INTO moves (id, name, type, category, power, accuracy, status_inflict, status_chance, pp, priority) VALUES
+(1, 'Force Tap', 'normal', 'physical', 40, 100, NULL, NULL, 35, 0),
+(2, 'Thorn Lash', 'grass', 'physical', 45, 100, NULL, NULL, 25, 0),
+(3, 'Cinder Flick', 'fire', 'special', 40, 100, 'burn', 10, 25, 0),
+(4, 'Stream Bolt', 'water', 'special', 40, 100, NULL, NULL, 25, 0),
+(5, 'Quickstep', 'normal', 'physical', 40, 100, NULL, NULL, 30, 1),
+(6, 'Low Call', 'normal', 'status', NULL, 100, NULL, NULL, 40, 0),
+(7, 'Venom Drip', 'poison', 'special', 50, 100, 'poison', 20, 20, 0),
+(8, 'Shock Pulse', 'electric', 'special', 40, 100, 'paralysis', 20, 25, 0),
+(9, 'Dream Dust', 'psychic', 'status', NULL, 95, 'sleep', 100, 15, 0),
+(10, 'Frost Pin', 'ice', 'special', 55, 100, 'freeze', 10, 15, 0)
 ON DUPLICATE KEY UPDATE
   type=VALUES(type), category=VALUES(category), power=VALUES(power), accuracy=VALUES(accuracy),
+  status_inflict=VALUES(status_inflict), status_chance=VALUES(status_chance),
   pp=VALUES(pp), priority=VALUES(priority);
 
 -- ---------------------------------------------------------------------------

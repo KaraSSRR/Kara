@@ -134,6 +134,8 @@ CREATE TABLE IF NOT EXISTS moves (
   category VARCHAR(16) NOT NULL,
   power SMALLINT UNSIGNED NULL,
   accuracy SMALLINT UNSIGNED NULL,
+  status_inflict VARCHAR(16) NULL,
+  status_chance TINYINT UNSIGNED NULL,
   pp SMALLINT UNSIGNED NOT NULL,
   priority TINYINT NOT NULL DEFAULT 0,
   PRIMARY KEY (id),
@@ -263,6 +265,18 @@ CREATE TABLE IF NOT EXISTS battle_logs (
   KEY idx_battle_logs_battle (battle_id),
   KEY idx_battle_logs_turn (battle_id, turn, seq),
   CONSTRAINT fk_battle_logs_battle FOREIGN KEY (battle_id) REFERENCES battles(id) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS battle_snapshots (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  battle_id BIGINT UNSIGNED NOT NULL,
+  turn SMALLINT UNSIGNED NOT NULL,
+  state JSON NOT NULL,
+  created_at DATETIME NOT NULL,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_battle_snapshots (battle_id, turn),
+  KEY idx_battle_snapshots_battle (battle_id),
+  CONSTRAINT fk_battle_snapshots_battle FOREIGN KEY (battle_id) REFERENCES battles(id) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Chat (Milestone 2+) 
