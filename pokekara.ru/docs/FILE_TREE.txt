@@ -48,6 +48,7 @@ app/bootstrap.php
 bin/admin.php
 docs/FILE_TREE.txt
 docs/FULL_CONTENT.txt
+docs/milestone0_analysis.md
 public/.htaccess
 public/assets/app.css
 public/assets/app.js
