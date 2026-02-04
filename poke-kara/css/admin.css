@@ -1,0 +1,121 @@
+.navbar_div{
+                    width: 220px;
+                    height: 100vh;
+                    background: #212529;
+                    color: #fff;
+                    position: fixed;
+            }
+            .navbar_name{
+                text-align: center;
+    margin-top: 10px;
+    font-size: 25px;
+            }
+            .navbar_div a{
+                display: block;
+    padding: 0.1875rem 0.5rem;
+    margin-top: 0.125rem;
+    margin-left: 0.25rem;
+    text-decoration: none;
+    color: #fff;
+    width: 90%;
+            }
+            .navbar_div ul{
+                margin-left: 2em;
+            }
+            .nav-icon{
+                width: 19px;
+    text-align: center;
+    margin-right: 5px;
+            }
+            .dopbar{
+                height: 30px;
+            }
+            .nav-icon-dop{
+                font-size: 21px;
+    vertical-align: bottom;
+    float: right;
+            }
+            .panel_content{
+                padding-left: 240px;
+                padding-top: 20px;
+            }
+            .content_header{
+                font-size: 45px;
+                border-bottom: 11px double #212529;
+                width: fit-content;
+                margin-bottom: 30px;
+            }
+            .content_block{
+                display: inline-block;
+    width: 300px;
+    height: 152px;
+    color: #fff;
+    border-radius: 10px;
+    text-align: center;
+    margin: 25px;
+            }
+            .money_block{
+                background: #01bcd6;
+            }
+            .pokemon_block{
+                background: #ff9800;
+            }
+            .user_block{
+                background: #f54336;
+            }
+            
+            .millioner_block{
+                background: #e91f63;
+                height: 360px;
+            }
+            .battle_block{
+                background: #009688;
+                height: 360px;
+            }
+            .pokuser_block{
+                background: #8bc349;
+                height: 360px;
+            }
+            .block_head{
+                font-size: 23px;
+    font-style: oblique;
+            }
+            .block_count{
+                font-size: 35px;
+    font-weight: bold;
+    margin-top: 20px;
+            }
+            .Color-Green{
+                color: #328d46!important;
+            }
+            .Color-Red{
+                color: #b34d4d!important;
+            }
+            .millioner_table, .battle_table, .pokuser_table{
+                width: 100%;
+            }
+            .millioner_table tr, .battle_table tr, .pokuser_table tr{
+                height: 30px;
+            }
+            .millioner_table img, .battle_table img, .pokuser_table img{
+                max-height: 30px;
+            }
+            .table{
+                width: 95%;
+            }
+            .button{
+                display: block;
+    border-radius: 3px;
+    color: #fff;
+    cursor: pointer;
+    border: none;
+    margin: 5px auto;
+    background: #6c99ca;
+    height: 32px;
+    box-sizing: border-box;
+    padding: 3px 5px;
+    line-height: 25px;
+    width: 200px;
+    text-align: center;
+    font-size: 15px;
+            }

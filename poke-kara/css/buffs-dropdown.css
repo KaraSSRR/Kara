@@ -1,0 +1,206 @@
+.BuffsDropdown {
+  position: relative;
+  display: inline-block;
+  margin: 0 0 0 8px;
+  vertical-align: middle;
+}
+.BuffsDropdown-btn {
+  background: #f5f2fa;
+  border: 1.5px solid #e1d7fa;
+  border-radius: 7px;
+  padding: 6px 14px 6px 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 1.18em;
+  min-width: 36px;
+  transition: box-shadow .13s, border-color .13s;
+  box-shadow: 0 1px 6px 0 rgba(120,90,180,0.07);
+  color: #6d5fa0;
+  outline: none;
+  position: relative;
+  z-index: 100;
+  user-select: none;
+}
+.BuffsDropdown-btn:hover, .BuffsDropdown-btn:focus {
+  border-color: #bfa7ec;
+  box-shadow: 0 2px 9px 0 rgba(120,90,180,0.13);
+  background: #f2edf8;
+}
+.BuffsDropdown-btn i {
+  font-size: 1.4em;
+  vertical-align: middle;
+  pointer-events: none;
+}
+.BuffsDropdown-count {
+  background: #9358e3;
+  color: #fff;
+  font-size: 0.97em;
+  font-weight: 600;
+  border-radius: 9px;
+  padding: 0 8px;
+  margin-left: 3px;
+  min-width: 20px;
+  text-align: center;
+  line-height: 20px;
+  display: inline-block;
+  letter-spacing: 0.02em;
+}
+.BuffsDropdown-list {
+  display: none;
+  opacity: 0;
+  pointer-events: none;
+  position: absolute;
+  top: 110%;
+  left: 0;
+  min-width: 238px;
+  background: #f8f7fa;
+  border: 1.5px solid #e1d7fa;
+  border-radius: 12px;
+  box-shadow: 0 2px 18px 0 rgba(60,40,140,0.13);
+  padding: 7px 0 7px 0;
+  z-index: 101;
+  max-height: 360px;
+  overflow-y: auto;
+  margin-top: 3px;
+  scrollbar-width: thin;
+  scrollbar-color: #dad5f0 #f7f8fa;
+  transition: opacity 0.18s;
+}
+.BuffsDropdown-list.open {
+  display: block;
+  opacity: 1;
+  pointer-events: auto;
+}
+.BuffsDropdown-list::-webkit-scrollbar {
+  width: 7px;
+  background: #f7f8fa;
+}
+.BuffsDropdown-list::-webkit-scrollbar-thumb {
+  background: #dad5f0;
+  border-radius: 7px;
+}
+.BuffsDropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 20px 8px 15px;
+  font-size: 1.06em;
+  color: #6d5fa0;
+  cursor: default;
+  border-bottom: 1px solid #f2eafd;
+  transition: background .11s;
+  min-height: 40px;
+  background: none;
+  line-height: 1.26;
+  border-radius: 7px;
+  position: relative;
+  word-break: break-word;
+  white-space: normal;
+}
+.BuffsDropdown-item:last-child {
+  border-bottom: none;
+}
+.BuffsDropdown-item:hover {
+  background: #eee7fa;
+}
+.BuffsDropdown-item[onclick] {
+  cursor: pointer;
+  user-select: none;
+}
+.BuffsDropdown-item.ev_sys i,
+.BuffsDropdown-item.money_sys i,
+.BuffsDropdown-item.drop_sys i,
+.BuffsDropdown-item.exp_sys i,
+.BuffsDropdown-item.shine_sys i,
+.BuffsDropdown-item.tren_sys i {
+  margin-right: 7px;
+  min-width: 20px;
+  text-align: center;
+  color: #b19de2;
+  font-size: 1.2em;
+}
+.BuffsDropdown-item-title {
+  color: #a39bc7;
+  font-size: 0.98em;
+  margin-left: 7px;
+  font-style: italic;
+  flex: 1 1 auto;
+  white-space: normal;
+}
+.BuffsDropdown-item[style*="background-image"] {
+  background-repeat: no-repeat;
+  background-position: 8px center;
+  background-size: 24px 24px;
+  padding-left: 42px;
+}
+.BuffsDropdown-empty {
+  color: #bcb4d6;
+  text-align: center;
+  padding: 22px 0 15px 0;
+  font-size: 1em;
+  letter-spacing: 0.01em;
+}
+@media (max-width: 1000px) {
+  .BuffsDropdown-list {
+    min-width: 70vw;
+    max-width: 90vw;
+    left: 50%;
+    transform: translateX(-50%);
+    max-height: 45vh;
+    font-size: 1em;
+  }
+  .BuffsDropdown-btn {
+    font-size: 1.07em;
+    padding: 6px 10px 6px 7px;
+  }
+  .BuffsDropdown-item {
+    font-size: 1em;
+    padding: 7px 13px 7px 12px;
+    min-height: 35px;
+  }
+  .BuffsDropdown-item[style*="background-image"] {
+    background-size: 22px 22px;
+    padding-left: 38px;
+  }
+}
+@media (max-width: 700px) {
+  .BuffsDropdown-list {
+    /*min-width: 96vw;*/
+    left: 50%;
+    transform: translateX(-50%);
+    max-height: 55vh;
+    border-radius: 13px;
+    font-size: 0.98em;
+  }
+  .BuffsDropdown-btn {
+    font-size: 1em;
+    padding: 6px 9px 6px 5px;
+  }
+  .BuffsDropdown-item {
+    font-size: 0.97em;
+    padding: 7px 10px 7px 11px;
+    min-height: 32px;
+    border-radius: 6px;
+  }
+  .BuffsDropdown-item[style*="background-image"] {
+    background-size: 20px 20px;
+    padding-left: 32px;
+  }
+}
+@media (max-width: 430px) {
+  .BuffsDropdown-list {
+    /*min-width: 99vw;*/
+    max-width: 99vw;
+    font-size: 0.95em;
+    padding-left: 0;
+    padding-right: 0;
+  }
+  .BuffsDropdown-btn {
+    min-width: 30px;
+    font-size: 0.97em;
+    padding: 5px 7px 5px 4px;
+    border-radius: 6px;
+  }
+}

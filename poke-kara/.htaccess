@@ -1,0 +1,87 @@
+AddDefaultCharset utf-8
+Options -Indexes
+
+# Базовая безопасность (не ломает логику, если модулей нет — просто игнорируется)
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    Header always set Permissions-Policy "geolocation=(), microphone=(), camera=()"
+</IfModule>
+
+# Запрет опасных HTTP-методов (оставляем GET/POST/HEAD)
+<IfModule mod_authz_core.c>
+    <LimitExcept GET POST HEAD>
+        Require all denied
+    </LimitExcept>
+</IfModule>
+<IfModule !mod_authz_core.c>
+    <LimitExcept GET POST HEAD>
+        Order allow,deny
+        Deny from all
+    </LimitExcept>
+</IfModule>
+
+RewriteEngine On
+
+# Защита чувствительных файлов и расширений (в т.ч. те, что часто забывают закрыть)
+<FilesMatch "(^\.|\.env(\.example)?|\.ini|\.log|\.sql|\.zip|\.bak|\.old|\.swp|~$|composer\.(json|lock)|const\.php|global\.php|_env\.php|_bootstrap\.php)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# Закрываем прямой HTTP-доступ к "внутренностям" (include/require продолжат работать)
+<IfModule mod_rewrite.c>
+    RewriteRule ^(inc/|makasimka/inc/|db/|migrations/|vendor/|showdown-sim/node_modules/|storage/|backup/|backups/) - [F,L]
+</IfModule>
+
+# Принудительный HTTPS (с поддержкой прокси)
+RewriteCond %{HTTPS} off [OR]
+RewriteCond %{HTTP:X-Forwarded-Proto} !https
+RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# Если запрашиваемый объект не папка и не файл, но существует .php файл
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME}\.php -f
+RewriteRule ^(.*)$ $1.php [L]
+
+# Отключение ошибок PHP (только для mod_php)
+<IfModule mod_php7.c>
+    php_value error_reporting 0
+    php_flag display_errors Off
+</IfModule>
+<IfModule mod_php8.c>
+    php_value error_reporting 0
+    php_flag display_errors Off
+</IfModule>
+
+# Настройки для файла 403.shtml
+<Files 403.shtml>
+    <IfModule mod_authz_core.c>
+        Require all granted
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        order allow,deny
+        allow from all
+    </IfModule>
+</Files>
+
+# Блокировка конкретного IP (Apache 2.4)
+<IfModule mod_authz_core.c>
+    <RequireAll>
+        Require all granted
+        Require not ip 2a10:1fc0:7::3ba4:830f
+    </RequireAll>
+</IfModule>
+# Для Apache 2.2
+<IfModule !mod_authz_core.c>
+    <Limit GET POST>
+        deny from 2a10:1fc0:0007:0000:0000:0000:3ba4:830f
+    </Limit>
+</IfModule>
