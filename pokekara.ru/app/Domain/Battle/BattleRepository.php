@@ -90,6 +90,20 @@ final class BattleRepository {
         }
     }
 
+    public function addSnapshot(int $battleId, int $turn, array $state): void {
+        $pdo = Database::pdo();
+        $st = $pdo->prepare('
+            INSERT INTO battle_snapshots (battle_id, turn, state, created_at)
+            VALUES (?,?,?,NOW())
+            ON DUPLICATE KEY UPDATE state = VALUES(state)
+        ');
+        $st->execute([
+            $battleId,
+            $turn,
+            json_encode($state, JSON_UNESCAPED_UNICODE),
+        ]);
+    }
+
     public function listLogs(int $battleId, int $limit = 120): array {
         $limit = max(1, min(500, $limit));
         $pdo = Database::pdo();

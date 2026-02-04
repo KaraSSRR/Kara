@@ -93,6 +93,19 @@ $winner = $state['winner'] ?? null;
           <?php else: ?>
             <span class="chip muted">Item: —</span>
           <?php endif; ?>
+          <?php if (!empty($p1['status']['major'])): ?>
+            <span class="chip">Status: <?= e((string)$p1['status']['major']) ?></span>
+          <?php else: ?>
+            <span class="chip muted">Status: —</span>
+          <?php endif; ?>
+        </div>
+
+        <div class="row" style="gap:8px; flex-wrap:wrap; margin-top:10px">
+          <span class="chip">ATK <?= e((string)($p1['boosts']['atk'] ?? 0)) ?></span>
+          <span class="chip">DEF <?= e((string)($p1['boosts']['def'] ?? 0)) ?></span>
+          <span class="chip">SPA <?= e((string)($p1['boosts']['spa'] ?? 0)) ?></span>
+          <span class="chip">SPD <?= e((string)($p1['boosts']['spd'] ?? 0)) ?></span>
+          <span class="chip">SPE <?= e((string)($p1['boosts']['spe'] ?? 0)) ?></span>
         </div>
 
         <h2 style="margin-top:14px">Ходы</h2>
@@ -155,6 +168,11 @@ $winner = $state['winner'] ?? null;
 
         <div class="row" style="gap:8px; flex-wrap:wrap; margin-top:10px">
           <span class="chip">Ability: <?= e((string)($p2['ability']['name'] ?? '—')) ?></span>
+          <?php if (!empty($p2['status']['major'])): ?>
+            <span class="chip">Status: <?= e((string)$p2['status']['major']) ?></span>
+          <?php else: ?>
+            <span class="chip muted">Status: —</span>
+          <?php endif; ?>
         </div>
 
         <h2 style="margin-top:14px">Наблюдение</h2>
@@ -182,6 +200,22 @@ $winner = $state['winner'] ?? null;
           <div class="kpi">
             <div class="kpi-label">Boost ATK</div>
             <div class="kpi-value"><?= e((string)($p2['boosts']['atk'] ?? 0)) ?></div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">Boost DEF</div>
+            <div class="kpi-value"><?= e((string)($p2['boosts']['def'] ?? 0)) ?></div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">Boost SPA</div>
+            <div class="kpi-value"><?= e((string)($p2['boosts']['spa'] ?? 0)) ?></div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">Boost SPD</div>
+            <div class="kpi-value"><?= e((string)($p2['boosts']['spd'] ?? 0)) ?></div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">Boost SPE</div>
+            <div class="kpi-value"><?= e((string)($p2['boosts']['spe'] ?? 0)) ?></div>
           </div>
         </div>
 

@@ -72,6 +72,10 @@ mysql -u root -p rpg_v2 < sql/migrations/001_init.sql
 mysql -u root -p rpg_v2 < sql/migrations/002_m2_showdown_battle.sql
 mysql -u root -p rpg_v2 < sql/migrations/003_m2_battle_location.sql
 mysql -u root -p rpg_v2 < sql/migrations/004_chat.sql
+mysql -u root -p rpg_v2 < sql/migrations/005_species_evolutions.sql
+mysql -u root -p rpg_v2 < sql/migrations/006_battle_snapshots.sql
+mysql -u root -p rpg_v2 < sql/migrations/007_moves_status.sql
+mysql -u root -p rpg_v2 < sql/migrations/008_location_encounters.sql
 ```
 
 3) Скопируй `.env`:
@@ -94,6 +98,7 @@ php -S localhost:8000 -t public
 - `/creatures/{id}` — карточка существа
 - `/battle` — бой
 - `/battle/{id}` — бой по ID
+- `/locations/{id}` — локация с кнопкой “Исследовать”
 - `/api/battle/{id}` — replay JSON (seed + actions + logs)
 
 Примечание (Вариант A): если пользователь авторизован и открывает напрямую `/me`, `/creatures`, `/battle` и т.п., сервер редиректит на `/locations?open=/...` чтобы сохранить правило **"всё в одной вкладке"**.

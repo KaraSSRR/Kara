@@ -145,4 +145,64 @@ final class BattleController {
             'logs' => $logs,
         ]);
     }
+
+    public function apiStart(Request $request): void {
+        $uid = Security::requireAuth($request);
+        $creatureId = (int)$request->input('creature_id', 0);
+        if ($creatureId <= 0) Response::apiError($request, 'validation', 'creature_id required', 422);
+
+        $id = $this->service->start1v1($uid, $creatureId);
+        $battle = $this->battles->findByIdForUser($uid, $id);
+        Response::apiOk($request, [
+            'battle_id' => $id,
+            'battle' => $battle,
+        ], 201);
+    }
+
+    public function apiTurn(Request $request): void {
+        $uid = Security::requireAuth($request);
+        $id = (int)($request->params['id'] ?? 0);
+        $slot = (int)$request->input('slot', 0);
+        if ($id <= 0 || $slot <= 0) Response::apiError($request, 'validation', 'Invalid battle or slot', 422);
+
+        $res = $this->service->playerMove($uid, $id, $slot);
+        Response::apiOk($request, [
+            'battle' => $res['battle'],
+            'state' => $res['state'],
+        ]);
+    }
+
+    public function apiState(Request $request): void {
+        $uid = Security::requireAuth($request);
+        $id = (int)($request->params['id'] ?? 0);
+        $battle = $this->battles->findByIdForUser($uid, $id);
+        if (!$battle) Response::apiError($request, 'not_found', 'Not found', 404);
+
+        $state = BattleRepository::decodeJson($battle['state']);
+        $logs = $this->battles->listLogs($id, 200);
+
+        Response::apiOk($request, [
+            'battle' => [
+                'id' => (int)$battle['id'],
+                'status' => (string)$battle['status'],
+                'turn' => (int)$battle['turn'],
+                'created_at' => $battle['created_at'],
+                'finished_at' => $battle['finished_at'],
+            ],
+            'state' => $state,
+            'logs' => $logs,
+        ]);
+    }
+
+    public function apiForfeit(Request $request): void {
+        $uid = Security::requireAuth($request);
+        $id = (int)($request->params['id'] ?? 0);
+        if ($id <= 0) Response::apiError($request, 'validation', 'Invalid battle', 422);
+
+        $res = $this->service->forfeit($uid, $id);
+        Response::apiOk($request, [
+            'battle' => $res['battle'],
+            'state' => $res['state'],
+        ]);
+    }
 }

@@ -43,12 +43,17 @@ $router->get('/locations', [LocationController::class, 'index']);
 $router->get('/locations/panel', [LocationController::class, 'panel']);
 $router->get('/locations/{id}', [LocationController::class, 'show']);
 $router->post('/locations/{id}/travel', [LocationController::class, 'travel']);
+$router->post('/locations/{id}/explore', [LocationController::class, 'explore']);
 
 /** API (JSON) */
 $router->post('/api/login', [AuthController::class, 'apiLogin']);
 $router->post('/api/register', [AuthController::class, 'apiRegister']);
 $router->post('/api/logout', [AuthController::class, 'apiLogout']);
 $router->get('/api/me', [ProfileController::class, 'apiMe']);
+$router->post('/api/battle/start', [BattleController::class, 'apiStart']);
+$router->post('/api/battle/{id}/turn', [BattleController::class, 'apiTurn']);
+$router->get('/api/battle/{id}/state', [BattleController::class, 'apiState']);
+$router->post('/api/battle/{id}/forfeit', [BattleController::class, 'apiForfeit']);
 $router->get('/api/battle/{id}', [BattleController::class, 'apiReplay']);
 $router->get('/api/chat/meta', [ChatController::class, 'meta']);
 $router->get('/api/chat/poll', [ChatController::class, 'poll']);
