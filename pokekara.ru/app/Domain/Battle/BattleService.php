@@ -49,6 +49,33 @@ final class BattleService {
         return $battleId;
     }
 
+    public function startEncounter(int $userId, int $locationId, int $playerCreatureId): int {
+        $active = $this->battles->findActiveForUser($userId);
+        if ($active) return (int)$active['id'];
+
+        $c = $this->creatures->findForUserFull($userId, $playerCreatureId);
+        if (!$c) throw new \RuntimeException('Creature not found');
+        if ((int)$c['current_hp'] <= 0) throw new \RuntimeException('Creature is fainted');
+
+        $seed = random_int(1, 2147483647);
+        $rng = new Rng($seed);
+        $opponent = $this->generateOpponentForLocation($rng, $locationId, (int)$c['level']);
+
+        $state = [
+            'location_id' => $locationId,
+            'turn' => 0,
+            'finished' => false,
+            'winner' => null,
+            'rng_state' => $rng->getState(),
+            'p1' => $this->toBattleSide('p1', $c),
+            'p2' => $this->toBattleSide('p2', $opponent),
+        ];
+
+        $battleId = $this->battles->create($userId, $locationId, $playerCreatureId, $opponent, $seed, $state);
+        $this->battles->addSnapshot($battleId, 0, $state);
+        return $battleId;
+    }
+
     /** @return array<string,mixed> opponent snapshot */
     private function generateOpponent(Rng $rng, int $level): array {
         $pdo = Database::pdo();
@@ -119,6 +146,109 @@ final class BattleService {
             'status_arr' => [],
             'moves' => $moves,
         ];
+    }
+
+    /** @return array<string,mixed> opponent snapshot */
+    private function generateOpponentForLocation(Rng $rng, int $locationId, int $level): array {
+        $pdo = Database::pdo();
+
+        $timeSlot = $this->currentTimeSlot();
+        $st = $pdo->prepare('
+            SELECT le.species_id, le.weight, le.min_level, le.max_level,
+                   s.name, s.type1, s.type2, s.base_hp, s.base_atk, s.base_def, s.base_spa, s.base_spd, s.base_spe
+            FROM location_encounters le
+            JOIN species s ON s.id = le.species_id
+            WHERE le.location_id = ?
+              AND le.is_active = 1
+              AND (le.time_slot = "any" OR le.time_slot = ?)
+        ');
+        $st->execute([$locationId, $timeSlot]);
+        $rows = $st->fetchAll();
+
+        if (!$rows) {
+            return $this->generateOpponent($rng, $level);
+        }
+
+        $pick = $this->weightedPick($rows, $rng);
+        $speciesId = (int)$pick['species_id'];
+        $minLevel = (int)$pick['min_level'];
+        $maxLevel = (int)$pick['max_level'];
+        if ($maxLevel < $minLevel) [$minLevel, $maxLevel] = [$maxLevel, $minLevel];
+        $level = max(1, $rng->rangeInt($minLevel, $maxLevel));
+
+        $abilityId = null;
+        $abilityName = null;
+        $abilityDesc = null;
+        try {
+            $stA = $pdo->prepare('
+                SELECT a.id, a.name, a.description
+                FROM species_abilities sa JOIN abilities a ON a.id = sa.ability_id
+                WHERE sa.species_id = ? AND sa.slot = 0
+                LIMIT 1
+            ');
+            $stA->execute([$speciesId]);
+            $a = $stA->fetch();
+            if ($a) { $abilityId = (int)$a['id']; $abilityName = (string)$a['name']; $abilityDesc = (string)$a['description']; }
+        } catch (\Throwable $e) {}
+
+        $nature = 'hardy';
+        $happiness = 70;
+        $iv = ['hp'=>10,'atk'=>10,'def'=>10,'spa'=>10,'spd'=>10,'spe'=>10];
+        $ev = ['hp'=>0,'atk'=>0,'def'=>0,'spa'=>0,'spd'=>0,'spe'=>0];
+
+        $base = [
+            'hp'  => (int)$pick['base_hp'],
+            'atk' => (int)$pick['base_atk'],
+            'def' => (int)$pick['base_def'],
+            'spa' => (int)$pick['base_spa'],
+            'spd' => (int)$pick['base_spd'],
+            'spe' => (int)$pick['base_spe'],
+        ];
+        $stats = StatCalculator::calcAll($base, $iv, $ev, $level, $nature);
+        $moves = $this->defaultMovesForSpecies($speciesId);
+
+        return [
+            'id' => null,
+            'species_id' => $speciesId,
+            'species_name' => (string)$pick['name'],
+            'nickname' => '',
+            'level' => $level,
+            'types' => [ (string)$pick['type1'], $pick['type2'] ? (string)$pick['type2'] : null ],
+            'nature' => $nature,
+            'happiness' => $happiness,
+            'ability_id' => $abilityId,
+            'ability_name' => $abilityName,
+            'ability_description' => $abilityDesc,
+            'held_item_id' => null,
+            'held_item_name' => null,
+            'iv_arr' => $iv,
+            'ev_arr' => $ev,
+            'base_stats' => $base,
+            'final_stats' => $stats,
+            'max_hp' => $stats['hp'],
+            'current_hp' => $stats['hp'],
+            'status_arr' => [],
+            'moves' => $moves,
+        ];
+    }
+
+    /** @param array<int,array<string,mixed>> $rows */
+    private function weightedPick(array $rows, Rng $rng): array {
+        $total = 0;
+        foreach ($rows as $row) $total += max(0, (int)$row['weight']);
+        if ($total <= 0) return $rows[0];
+        $roll = $rng->rangeInt(1, $total);
+        $acc = 0;
+        foreach ($rows as $row) {
+            $acc += max(0, (int)$row['weight']);
+            if ($roll <= $acc) return $row;
+        }
+        return $rows[array_key_last($rows)];
+    }
+
+    private function currentTimeSlot(): string {
+        $hour = (int)date('G');
+        return ($hour >= 6 && $hour < 20) ? 'day' : 'night';
     }
 
     /** @return array<int,array<string,mixed>> */

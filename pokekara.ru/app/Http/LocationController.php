@@ -9,17 +9,23 @@ use App\Support\View;
 use App\Support\Security;
 use App\Domain\Auth\UserRepository;
 use App\Domain\Game\LocationRepository;
+use App\Domain\Game\CreatureRepository;
 use App\Domain\Battle\BattleRepository;
+use App\Domain\Battle\BattleService;
 
 final class LocationController {
     private LocationRepository $locations;
     private UserRepository $users;
     private BattleRepository $battles;
+    private CreatureRepository $creatures;
+    private BattleService $service;
 
     public function __construct() {
         $this->locations = new LocationRepository();
         $this->users = new UserRepository();
         $this->battles = new BattleRepository();
+        $this->creatures = new CreatureRepository();
+        $this->service = new BattleService($this->battles, $this->creatures);
     }
 
     private function renderPage(Request $request, string $view, array $data): void {
@@ -68,7 +74,7 @@ final class LocationController {
         ]);
     }
 
-public function show(Request $request): void {
+    public function show(Request $request): void {
         $uid = Security::requireAuth($request);
         $id = (int)($request->params['id'] ?? 0);
         $loc = $this->locations->find($id);
@@ -78,11 +84,15 @@ public function show(Request $request): void {
         }
 
         $user = $this->users->findById($uid);
+        $creatures = $this->creatures->listForUser($uid);
+        $active = $this->battles->findActiveForUser($uid);
 
         $this->renderPage($request, 'location_show', [
             'title' => 'Локация',
             'user' => $user,
             'location' => $loc,
+            'creatures' => $creatures,
+            'active_battle' => $active,
         ]);
     }
 
@@ -111,5 +121,40 @@ public function show(Request $request): void {
         if ($request->wantsJson()) Response::apiOk($request, ['current_location_id' => $id]);
 
         Response::redirect('/locations');
+    }
+
+    public function explore(Request $request): void {
+        $uid = Security::requireAuth($request);
+        Security::requireCsrf($request);
+
+        $active = $this->battles->findActiveForUser($uid);
+        if ($active) {
+            Security::flash('err', 'Сначала завершите активный бой.');
+            $this->redirect($request, '/battle/' . (int)$active['id']);
+        }
+
+        if (!Security::rateLimit('encounter', $uid . '|' . $request->ip, 10, 300)) {
+            Security::flash('err', 'Слишком частые энкаунтеры. Подожди немного.');
+            $this->redirect($request, '/locations');
+        }
+
+        $locationId = (int)($request->params['id'] ?? 0);
+        $creatureId = (int)$request->input('creature_id', 0);
+        if ($locationId <= 0 || $creatureId <= 0) {
+            Security::flash('err', 'Выбери существо для исследования.');
+            $this->redirect($request, '/locations/' . $locationId);
+        }
+
+        $loc = $this->locations->find($locationId);
+        if (!$loc) Response::apiError($request, 'not_found', 'Location not found', 404);
+
+        try {
+            $id = $this->service->startEncounter($uid, $locationId, $creatureId);
+            Security::flash('ok', 'Энкаунтер найден.');
+            $this->redirect($request, '/battle/' . $id);
+        } catch (\Throwable $e) {
+            Security::flash('err', $e->getMessage());
+            $this->redirect($request, '/locations/' . $locationId);
+        }
     }
 }

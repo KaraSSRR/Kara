@@ -89,3 +89,24 @@ ON DUPLICATE KEY UPDATE
   min_level=VALUES(min_level),
   item_id=VALUES(item_id),
   condition_text=VALUES(condition_text);
+
+-- ---------------------------------------------------------------------------
+-- Location encounters (starter MVP)
+-- ---------------------------------------------------------------------------
+INSERT INTO location_encounters (id, location_id, species_id, weight, min_level, max_level, time_slot, is_active) VALUES
+(1, 1, 1, 60, 2, 6, 'any', 1),
+(2, 1, 2, 20, 2, 5, 'day', 1),
+(3, 1, 3, 20, 2, 5, 'night', 1),
+(4, 2, 2, 70, 3, 7, 'any', 1),
+(5, 2, 5, 30, 5, 8, 'any', 1),
+(6, 3, 1, 50, 2, 6, 'any', 1),
+(7, 3, 4, 20, 4, 7, 'day', 1),
+(8, 3, 3, 30, 2, 6, 'night', 1)
+ON DUPLICATE KEY UPDATE
+  location_id=VALUES(location_id),
+  species_id=VALUES(species_id),
+  weight=VALUES(weight),
+  min_level=VALUES(min_level),
+  max_level=VALUES(max_level),
+  time_slot=VALUES(time_slot),
+  is_active=VALUES(is_active);

@@ -43,6 +43,7 @@ $router->get('/locations', [LocationController::class, 'index']);
 $router->get('/locations/panel', [LocationController::class, 'panel']);
 $router->get('/locations/{id}', [LocationController::class, 'show']);
 $router->post('/locations/{id}/travel', [LocationController::class, 'travel']);
+$router->post('/locations/{id}/explore', [LocationController::class, 'explore']);
 
 /** API (JSON) */
 $router->post('/api/login', [AuthController::class, 'apiLogin']);
