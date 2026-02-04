@@ -1,0 +1,473 @@
+/* Chat UI v4 (separate module) — only activates when .DivChat.gc-v4 is present */
+
+:root{
+  --gc-bg: #f6f8fc;
+  --gc-card: #ffffff;
+  --gc-border: #dbe3ef;
+  --gc-text: #1f2937;
+  --gc-muted: #64748b;
+  --gc-accent: #4f6ad8;
+  --gc-accent-2: #e879f9;
+  --gc-warning: #f59e0b;
+}
+
+body.dark-theme{
+  --gc-bg: #0b1220;
+  --gc-card: #0f172a;
+  --gc-border: #223047;
+  --gc-text: #e5e7eb;
+  --gc-muted: #94a3b8;
+  --gc-accent: #7aa2ff;
+}
+
+/* --- Layout --- */
+.DivChat.gc-v4{
+  display: grid !important;
+  grid-template-columns: 280px 1fr 72px 320px;
+  grid-template-rows: 1fr;
+  gap: 10px;
+  padding: 10px;
+  box-sizing: border-box;
+  background: var(--gc-bg) !important;
+}
+
+.DivChat.gc-v4 > *{ float:none !important; }
+
+/* chat core column */
+.DivChat.gc-v4 > .Chat,
+.DivChat.gc-v4 > .chat.Chat{
+  width: auto !important;
+  height: auto !important;
+  position: relative !important;
+  grid-column: 2;
+  background: transparent !important;
+}
+
+/* right buttons */
+.DivChat.gc-v4 > .DivRightButtons{
+  width: auto !important;
+  height: auto !important;
+  position: relative !important;
+  grid-column: 3;
+}
+
+/* trainers */
+.DivChat.gc-v4 > .Trainers{
+  width: auto !important;
+  height: auto !important;
+  position: relative !important;
+  grid-column: 4;
+}
+
+/* inbox */
+.DivChat.gc-v4 > .GcInbox{
+  grid-column: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  background: var(--gc-card);
+  border: 1px solid var(--gc-border);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(15,23,42,0.08);
+}
+
+.GcInboxHeader{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--gc-border);
+  background: linear-gradient(180deg, rgba(79,106,216,0.08), rgba(79,106,216,0));
+}
+.GcInboxHeader .title{
+  font-weight: 700;
+  color: var(--gc-text);
+  font-family: Nunito, Arial, sans-serif;
+}
+.GcInboxHeader .actions{
+  display:flex;
+  gap: 8px;
+}
+.GcBtn{
+  border: 1px solid var(--gc-border);
+  background: var(--gc-card);
+  color: var(--gc-text);
+  padding: 6px 10px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1;
+}
+.GcBtn:hover{ filter: brightness(0.98); }
+.GcBtn.primary{ border-color: rgba(79,106,216,0.35); }
+
+.GcInboxSearch{
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--gc-border);
+}
+.GcInboxSearch input{
+  width: 100%;
+  border: 1px solid var(--gc-border);
+  background: var(--gc-card);
+  color: var(--gc-text);
+  padding: 8px 10px;
+  border-radius: 12px;
+  outline: none;
+  font-size: 13px;
+}
+
+.GcInboxFilters{
+  display:flex;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--gc-border);
+}
+.GcPill{
+  border: 1px solid var(--gc-border);
+  background: var(--gc-card);
+  color: var(--gc-text);
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.GcPill.active{
+  border-color: rgba(79,106,216,0.5);
+  box-shadow: 0 0 0 3px rgba(79,106,216,0.12);
+}
+
+.GcInboxList{
+  flex:1;
+  min-height:0;
+  overflow:auto;
+  padding: 6px;
+}
+
+.GcDialog{
+  display:flex;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+.GcDialog:hover{ background: rgba(148,163,184,0.12); }
+.GcDialog.active{ border-color: rgba(79,106,216,0.5); background: rgba(79,106,216,0.08); }
+.GcAvatar{
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  border: 1px solid var(--gc-border);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-weight: 700;
+  color: var(--gc-text);
+  background: var(--gc-card);
+}
+.GcDialogMain{ flex:1; min-width:0; }
+.GcDialogTop{ display:flex; align-items:center; justify-content:space-between; gap: 8px; }
+.GcDialogName{ font-weight: 700; color: var(--gc-text); font-size: 13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.GcDialogMeta{ color: var(--gc-muted); font-size: 12px; white-space:nowrap; }
+.GcDialogBottom{ display:flex; align-items:center; justify-content:space-between; gap: 8px; margin-top: 2px; }
+.GcDialogSnippet{ color: var(--gc-muted); font-size: 12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.GcBadge{
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: rgba(245,158,11,0.18);
+  border: 1px solid rgba(245,158,11,0.45);
+  color: var(--gc-text);
+  font-size: 11px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+/* --- PM search bar --- */
+.GcPmSearch{
+  margin: 8px 6px 0 6px;
+  border: 1px solid var(--gc-border);
+  background: var(--gc-card);
+  border-radius: 12px;
+  padding: 8px;
+  display:flex;
+  align-items:center;
+  gap: 8px;
+}
+.GcPmSearch .gc-label{ font-size: 12px; color: var(--gc-muted); white-space:nowrap; }
+.GcPmSearch input{
+  flex:1;
+  min-width:0;
+  border: 1px solid var(--gc-border);
+  background: var(--gc-card);
+  color: var(--gc-text);
+  padding: 8px 10px;
+  border-radius: 10px;
+  outline: none;
+  font-size: 13px;
+}
+.GcPmSearch .gc-mini{
+  border: 1px solid var(--gc-border);
+  background: var(--gc-card);
+  color: var(--gc-text);
+  padding: 7px 10px;
+  border-radius: 10px;
+  cursor:pointer;
+  font-size: 12px;
+  line-height:1;
+}
+.GcPmSearch .gc-mini:hover{ filter: brightness(0.98); }
+.GcPmSearch .gc-count{ font-size: 12px; color: var(--gc-muted); width: 56px; text-align:center; }
+
+/* Highlight */
+mark.GcHl{ background: rgba(79,106,216,0.18); color: inherit; padding: 0 2px; border-radius: 4px; }
+.Message.gc-pm-match-active{ outline: 2px solid rgba(79,106,216,0.45); border-radius: 6px; }
+.Message.gc-pm-hide{ display:none !important; }
+
+/* Profanity */
+.gc-prof-btn.gc-prof-on{ box-shadow: 0 0 0 3px rgba(245,158,11,0.18); }
+.gc-profanity-placeholder{ color: var(--gc-muted); font-style: italic; }
+
+
+/* Critical: legacy chat uses absolute-positioned .Message-Block with % heights.
+   When we switch to grid/flex, those % heights can collapse and hide messages.
+   Force a stable flex layout so message lists are always visible. */
+.DivChat.gc-v4{
+  height: 100% !important;
+  min-height: 420px;
+  align-content: stretch;
+}
+
+.DivChat.gc-v4 > .Chat,
+.DivChat.gc-v4 > .chat.Chat{
+  display: flex !important;
+  flex-direction: column !important;
+  min-height: 0;
+  height: 100% !important;
+}
+
+.DivChat.gc-v4 > .Chat > .Talk,
+.DivChat.gc-v4 > .chat.Chat > .Talk{
+  flex: 1 1 0% !important;
+  min-height: 0;
+  width: 100% !important;
+  height: auto !important;
+  position: relative !important;
+  padding: 6px;
+  box-sizing: border-box;
+}
+
+.DivChat.gc-v4 > .Chat > .Talk > .Message-Block,
+.DivChat.gc-v4 > .chat.Chat > .Talk > .Message-Block{
+  position: relative !important;
+  inset: auto !important;
+  width: 100% !important;
+  height: 100% !important;
+  margin: 0 !important;
+  overflow: auto !important;
+  display: none;
+}
+
+.DivChat.gc-v4 > .Chat > .Talk > .Message-Block.Active,
+.DivChat.gc-v4 > .chat.Chat > .Talk > .Message-Block.Active{
+  display: block !important;
+}
+
+/* Improve readability inside message area */
+.DivChat.gc-v4 .Message-Block{
+  background: var(--gc-card) !important;
+  border: 1px solid var(--gc-border) !important;
+  border-radius: 14px !important;
+}
+
+.DivChat.gc-v4 .Message-Block > .Message{
+  padding: 6px 6px;
+}
+
+/* Make chat column itself more "card"-like without breaking existing structure */
+.DivChat.gc-v4 > .Chat > .Talk,
+.DivChat.gc-v4 > .chat.Chat > .Talk{
+  width: 100% !important;
+  height: auto !important;
+}
+.DivChat.gc-v4 > .Chat > .Talk > .Message-Block,
+.DivChat.gc-v4 > .chat.Chat > .Talk > .Message-Block{
+  border-radius: 14px !important;
+  border-color: var(--gc-border) !important;
+  background: rgba(255,255,255,0.65);
+}
+body.dark-theme .DivChat.gc-v4 > .Chat > .Talk > .Message-Block,
+body.dark-theme .DivChat.gc-v4 > .chat.Chat > .Talk > .Message-Block{
+  background: rgba(15,23,42,0.75);
+}
+
+.DivChat.gc-v4 > .Chat > .Category > .Button,
+.DivChat.gc-v4 > .chat.Chat > .Category > .Button{
+  border-radius: 999px !important;
+  border: 1px solid var(--gc-border) !important;
+  background: var(--gc-card) !important;
+  padding: 8px 10px !important;
+  margin: 6px 6px 0 0 !important;
+}
+.DivChat.gc-v4 > .Chat > .Category > .Active,
+.DivChat.gc-v4 > .chat.Chat > .Category > .Active{
+  border-color: rgba(79,106,216,0.5) !important;
+  box-shadow: 0 0 0 3px rgba(79,106,216,0.12);
+}
+
+/* --- Mobile: hide inbox, use overlay button --- */
+@media (max-width: 900px){
+  .DivChat.gc-v4{
+    grid-template-columns: 1fr 64px;
+    grid-template-rows: 1fr;
+  }
+  .DivChat.gc-v4 > .GcInbox{ display:none; }
+  .DivChat.gc-v4 > .Trainers{ display:none; }
+  .DivChat.gc-v4 > .Chat,
+  .DivChat.gc-v4 > .chat.Chat{ grid-column: 1; }
+  .DivChat.gc-v4 > .DivRightButtons{ grid-column: 2; }
+}
+
+/* Inbox overlay */
+.GcInboxOverlay{
+  position: fixed;
+  inset: 0;
+  background: rgba(15,23,42,0.55);
+  z-index: 5000;
+  display:flex;
+  align-items:flex-end;
+  justify-content:center;
+  padding: 12px;
+}
+.GcInboxOverlay .GcInbox{
+  width: min(520px, 100%);
+  max-height: 80vh;
+}
+
+.GcFab{
+  position: fixed;
+  right: 86px;
+  bottom: 18px;
+  z-index: 5100;
+  border: 1px solid rgba(79,106,216,0.45);
+  background: rgba(79,106,216,0.95);
+  color: #fff;
+  border-radius: 999px;
+  padding: 10px 14px;
+  font-size: 13px;
+  cursor: pointer;
+  box-shadow: 0 10px 24px rgba(15,23,42,0.2);
+}
+
+
+
+/* --- v4.3.1 Fix: ensure message blocks are visible and scrollable in grid layout --- */
+.DivChat.gc-v4{
+  height: 100% !important;
+  min-height: 420px;
+}
+
+.DivChat.gc-v4 > .Chat,
+.DivChat.gc-v4 > .chat.Chat{
+  display: flex !important;
+  flex-direction: column !important;
+  min-height: 0 !important;
+  height: 100% !important;
+}
+
+.DivChat.gc-v4 > .Chat > .Category,
+.DivChat.gc-v4 > .chat.Chat > .Category{
+  flex: 0 0 auto;
+}
+
+.DivChat.gc-v4 > .Chat > .Talk,
+.DivChat.gc-v4 > .chat.Chat > .Talk{
+  flex: 1 1 0% !important;
+  min-height: 0 !important;
+  height: auto !important;
+  width: 100% !important;
+  position: relative !important;
+  margin: 6px 6px 10px 6px;
+  border: 1px solid var(--gc-border);
+  border-radius: 14px;
+  background: rgba(255,255,255,0.55);
+  overflow: hidden;
+}
+body.dark-theme .DivChat.gc-v4 > .Chat > .Talk,
+body.dark-theme .DivChat.gc-v4 > .chat.Chat > .Talk{
+  background: rgba(15,23,42,0.55);
+}
+
+/* Override legacy absolute positioning in v4 mode */
+.DivChat.gc-v4 > .Chat > .Talk > .Message-Block,
+.DivChat.gc-v4 > .chat.Chat > .Talk > .Message-Block{
+  position: relative !important;
+  inset: auto !important;
+  top: auto !important;
+  left: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  height: 100% !important;
+  width: calc(100% - 12px) !important;
+  margin: 6px !important;
+  overflow: auto !important;
+  display: none;
+  border-radius: 12px !important;
+}
+
+.DivChat.gc-v4 > .Chat > .Talk > .Message-Block.Active,
+.DivChat.gc-v4 > .chat.Chat > .Talk > .Message-Block.Active{
+  display: block !important;
+}
+
+/* Ensure messages contrast */
+.DivChat.gc-v4 .Message-Block .Message{
+  color: var(--gc-text) !important;
+}
+
+/* Inbox visual cleanup (less bulky) */
+.DivChat.gc-v4 > .GcInbox{
+  border-radius: 14px;
+}
+.GcInboxTitle{
+  font-weight: 800;
+  letter-spacing: 0.2px;
+}
+
+/* Compatibility: JS uses GcInboxTitle / GcInboxBtn / GcInboxPill */
+.GcInboxTitle{
+  font-weight: 700;
+  color: var(--gc-text);
+  font-family: Nunito, Arial, sans-serif;
+}
+.GcInboxBtn{
+  border: 1px solid var(--gc-border);
+  background: var(--gc-card);
+  color: var(--gc-text);
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+}
+.GcInboxBtn:hover{ filter: brightness(0.98); }
+.GcInboxHeaderRight{ display:flex; gap: 8px; }
+.GcInboxPill{
+  border: 1px solid var(--gc-border);
+  background: var(--gc-card);
+  color: var(--gc-text);
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.GcInboxPill.is-active{
+  border-color: rgba(79,106,216,0.5);
+  box-shadow: 0 0 0 3px rgba(79,106,216,0.12);
+}
+

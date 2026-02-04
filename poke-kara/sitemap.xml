@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset 
+      xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+
+  <!-- Главная -->
+  <url>
+    <loc>https://poke-kara.ru/</loc>
+    <lastmod>2025-07-12</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+
+  <!-- Регистрация -->
+  <url>
+    <loc>https://poke-kara.ru/?route=registration</loc>
+    <lastmod>2025-07-12</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Правила -->
+  <url>
+    <loc>https://poke-kara.ru/?route=rules</loc>
+    <lastmod>2025-07-10</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.4</priority>
+  </url>
+
+  <!-- Новости (первые 3 страницы) -->
+  <url>
+    <loc>https://poke-kara.ru/?page=1</loc>
+    <lastmod>2025-07-12</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://poke-kara.ru/?page=2</loc>
+    <lastmod>2025-07-11</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://poke-kara.ru/?page=3</loc>
+    <lastmod>2025-07-10</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- Мир покемонов -->
+  <url>
+    <loc>https://poke-kara.ru/world</loc>
+    <lastmod>2025-07-12</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- Коллекция стикеров -->
+  <url>
+    <loc>https://poke-kara.ru/?route=stickers</loc>
+    <lastmod>2025-07-11</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- FAQ -->
+  <url>
+    <loc>https://poke-kara.ru/?route=faq</loc>
+    <lastmod>2025-07-10</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <!-- Топ игроков -->
+  <url>
+    <loc>https://poke-kara.ru/?route=top</loc>
+    <lastmod>2025-07-12</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Форум -->
+  <url>
+    <loc>https://poke-kara.ru/?route=forum</loc>
+    <lastmod>2025-07-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- Поиск по покемонам -->
+  <url>
+    <loc>https://poke-kara.ru/?route=pokemon-search</loc>
+    <lastmod>2025-07-12</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- Добавь дополнительные игровые разделы, гайды, уникальные страницы персонажей и т.д. -->
+
+</urlset>

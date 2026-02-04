@@ -1,0 +1,151 @@
+@media screen and (max-width: 1000px) {
+  html, body {
+      min-width: 900px;
+  }
+  .Content > .Wrap > .Main > .News {
+        width: 60%;
+  }
+  .Content > .Wrap > .Main > .Other {
+    width: 38%;
+  }
+  .Content {
+    width: 900px;
+  }
+}
+@media screen and (max-width: 900px) {
+  html, body {
+      min-width: 0px;
+  }
+  .TopMenu > .RightMenu > .Logo {
+    display: none;
+  }
+  .TopMenu > .LeftMenu {
+    position: relative;
+    padding-top: 5px;
+    left: 0px;
+    top: 0px;
+  }
+  .TopMenu {
+    text-align: center;
+    height: auto;
+  }
+  .TopMenu > .RightMenu {
+    position: absolute;
+    top: 5px;
+    padding-bottom: 10px;
+    left: 5px;
+    right: 0px;
+    width: 10px;
+    z-index: 5;
+  }
+  .TopMenu > .MidMenu {
+    width: auto;
+    padding: 5px;
+  }
+  .TopMenu > .MidMenu > .Button{
+    padding: 5px;
+    border-radius: 3px;
+    margin: 5px 2px;
+    font-size: 12px;
+    font-family: sans-serif;
+    line-height: normal;
+    color: #999;
+  }
+  .Header > .Project > .Center > .Text > .Big{
+    display: none;
+  }
+  .Header > .Project > .Center > .Logo{
+    display: none;
+  }
+  .Header > .Project > .Center > .Text > p{
+    display: none;
+  }
+  .Header > .Name{
+    bottom: 0px;
+top: -5px;
+  }
+  .Header > .Name > p{
+    border-radius: 0px 0px 3px 3px;
+font-size: 15px;
+padding: 10px;
+  }
+  .Header {
+        height: 100px;
+  }
+  .TopMenu > .RightMenu > .Social > .Button {
+    padding: 0px;
+    background: none;
+    color: #9b9a9a;
+    display: block;
+    margin: 5px 0px;
+  }
+  .Information-Panel {
+        position: initial;
+        height: 30px;
+  }
+  .Information-Panel > .Stat {
+    top: 170px;
+    background: #f3f3f3;
+    width: auto;
+    padding: 5px;
+  }
+  .Information-Panel > .Buttons {
+    width: 100%;
+    margin-top: 5px;
+  }
+  .Information-Panel > .Stat > .Step > span {
+    font-size: 12px;
+    margin: 0px 2px 0px 0px;
+  }
+  .Information-Panel > .Stat > .Step {
+        margin: 0px 10px;
+  }
+  .Information-Panel > .Buttons > .Button {
+    font-size: 13px;
+    margin: 0px 10px;
+    padding: 4px 0px;
+    line-height: normal;
+  }
+  .Content {
+    width: 100%;
+  }
+  .Header > .Project {
+    display: none;
+  }
+  .Content > .Wrap > .Main > .News {
+    width: 100%;
+      float: none;
+  }
+  .Content > .Wrap {
+    overflow: hidden;
+  }
+  .Content > .Wrap > .Main > .Other {
+    float: none;
+    width: 100%;
+    margin: 0px;
+  }
+  .Content > .Wrap > .Main > .Other > .Events > .Event > .Text {
+    width: 110px;
+  }
+  .Content > .Cards > .Step {
+    width: 100%;
+margin: 0px;
+  }
+  .Footer > .Left {
+    position: inherit;
+top: 0px;
+left: 0px;
+  }
+  .Content > .Footer > .Right {
+    position: inherit;
+    top: 0px;
+    left: 0px;
+    text-align: justify;
+  }
+  .Content > .Footer > .Right > .Step{
+    margin: 5px;
+  }
+  .Footer {
+    height: auto;
+  }
+}
