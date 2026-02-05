@@ -96,6 +96,7 @@ function respond($ok, $text, $extra) {
         'status'  => $ok ? 'success' : 'error',
         'text'    => (string)$text,
         'notify'  => (string)$text,
+        'csrf_token' => (string)clanCsrfToken(),
     ), $extra);
 
     echo json_encode($payload, JSON_UNESCAPED_UNICODE);
@@ -171,11 +172,38 @@ function columnExists($db, $table, $column) {
     return $row ? true : false;
 }
 
+function clanShopStockColumn($db) {
+    if (columnExists($db, 'clan_shop_stock', 'stock_remaining')) return 'stock_remaining';
+    if (columnExists($db, 'clan_shop_stock', 'stock')) return 'stock';
+    return null;
+}
+
 function nowHuman($ts) {
     if (!$ts) return date('d.m H:i');
     $t = strtotime($ts);
     if (!$t) return date('d.m H:i');
     return date('d.m H:i', $t);
+}
+
+function clanCsrfToken() {
+    if (!isset($_SESSION['clan_csrf']) || !is_string($_SESSION['clan_csrf']) || $_SESSION['clan_csrf'] === '') {
+        if (function_exists('random_bytes')) {
+            $_SESSION['clan_csrf'] = bin2hex(random_bytes(16));
+        } elseif (function_exists('openssl_random_pseudo_bytes')) {
+            $_SESSION['clan_csrf'] = bin2hex(openssl_random_pseudo_bytes(16));
+        } else {
+            $_SESSION['clan_csrf'] = md5(uniqid((string)mt_rand(), true));
+        }
+    }
+    return (string)$_SESSION['clan_csrf'];
+}
+
+function clanRequireCsrf() {
+    $token = isset($_POST['csrf_token']) ? (string)$_POST['csrf_token'] : '';
+    $session = (string)clanCsrfToken();
+    if ($token === '' || !hash_equals($session, $token)) {
+        respond(false, 'CSRF: неверный токен.', array());
+    }
 }
 
 // -------------------------
@@ -340,13 +368,15 @@ function clanEnsureDefaultRoles($db, $clanId) {
                 'clan.manage','clan.bank.deposit','clan.bank.withdraw',
                 'clan.storage.deposit','clan.storage.withdraw',
                 'clan.shop.buy','clan.members.kick','clan.roles.manage',
-                'clan.faction.set','clan.location.manage','clan.quest.manage'
+                'clan.faction.set','clan.location.manage','clan.quest.manage',
+                'clan.members.invite','clan.members.promote','clan.members.demote'
             ),
             'Офицер' => array(
                 'clan.bank.deposit',
                 'clan.storage.deposit','clan.storage.withdraw',
                 'clan.shop.buy','clan.members.kick',
-                'clan.location.manage','clan.quest.manage'
+                'clan.location.manage','clan.quest.manage',
+                'clan.members.invite','clan.members.promote','clan.members.demote'
             ),
             'Участник' => array(
                 'clan.bank.deposit','clan.storage.deposit','clan.shop.buy'
@@ -411,6 +441,31 @@ function clanRequirePerm($db, $userId, $permKey) {
     if (!clanHasPerm($db, $userId, $permKey)) {
         respond(false, 'Недостаточно прав.', array());
     }
+}
+
+function clanQuestProgress($db, $clanId, $type, $delta) {
+    if (!tableExists($db, 'clan_quests_active') || !tableExists($db, 'clan_quests_catalog')) return;
+    $clanId = (int)$clanId;
+    $delta = (int)$delta;
+    if ($delta <= 0) return;
+    $row = fetchOne(
+        $db,
+        "SELECT qa.id, qa.progress, qc.target_value"
+            . " FROM clan_quests_active qa"
+            . " JOIN clan_quests_catalog qc ON qc.id=qa.quest_id"
+            . " WHERE qa.clan_id=? AND qa.is_completed=0 AND qc.type=? AND qa.ends_at > NOW()"
+            . " ORDER BY qa.id DESC LIMIT 1",
+        'is',
+        array($clanId, (string)$type)
+    );
+    if (!$row) return;
+    $new = (int)$row['progress'] + $delta;
+    $target = (int)$row['target_value'];
+    $isCompleted = ($target > 0 && $new >= $target) ? 1 : 0;
+    $stmt = $db->prepare("UPDATE clan_quests_active SET progress=?, is_completed=? WHERE id=?");
+    $stmt->bind_param('iii', $new, $isCompleted, $row['id']);
+    $stmt->execute();
+    $stmt->close();
 }
 
 function clanAudit($db, $clanId, $actorUserId, $action, $targetUserId, $meta) {
@@ -532,6 +587,10 @@ try {
 
     switch ($action) {
 
+        case 'csrf': {
+            respond(true, '', array('csrf_token' => clanCsrfToken()));
+        }
+
         // -------------------------
         // Public: list
         // -------------------------
@@ -563,6 +622,7 @@ try {
         // -------------------------
         case 'createClan': {
             requireClanSchema($db);
+            clanRequireCsrf();
 
             $name = clearName(pStr('name', ''));
             if (function_exists('mb_strlen')) {
@@ -605,6 +665,25 @@ try {
                 $stmt->bind_param('iii', $clanId, $userId, $leaderRoleId);
                 $stmt->execute();
                 $stmt->close();
+
+                if (tableExists($db, 'base_clans')) {
+                    $info = json_encode(array('name'=>$name), JSON_UNESCAPED_UNICODE);
+                    $stmt = $db->prepare("INSERT IGNORE INTO base_clans (id, info, rating, users_cool, level, exp, exp_next) VALUES (?,?,?,?,?,?,?)");
+                    $rating = 0;
+                    $usersCool = 1;
+                    $level = 1;
+                    $exp = 0;
+                    $expNext = 1000;
+                    $stmt->bind_param('isiiiii', $clanId, $info, $rating, $usersCool, $level, $exp, $expNext);
+                    $stmt->execute();
+                    $stmt->close();
+                }
+                if (tableExists($db, 'base_clans_users')) {
+                    $stmt = $db->prepare("INSERT INTO base_clans_users (user_id, clan_id, raiting, status, `group`) VALUES (?,?,0,'Лидер',1)");
+                    $stmt->bind_param('ii', $userId, $clanId);
+                    $stmt->execute();
+                    $stmt->close();
+                }
 
                 // кошелёк
                 walletEnsure($db, $clanId);
@@ -756,6 +835,10 @@ try {
             );
 
             $emblem = isset($clan['emblem_path']) && $clan['emblem_path'] ? $clan['emblem_path'] : ('/img/world/clans/emblems/' . $clanId . '.png');
+            $faction = null;
+            if (columnExists($db,'clans','faction_id') && tableExists($db,'clan_factions')) {
+                $faction = fetchOne($db, "SELECT id, code, name, badge_color FROM clan_factions WHERE id=(SELECT faction_id FROM clans WHERE id=? LIMIT 1) LIMIT 1", 'i', array($clanId));
+            }
 
             respond(true, '', array(
                 'info' => json_encode($infoObj, JSON_UNESCAPED_UNICODE),
@@ -768,6 +851,7 @@ try {
                 'clan_exp' => (int)$clan['exp'],
                 'clan_exp_next' => (int)$clan['exp_next'],
                 'emblem' => $emblem,
+                'clanFaction' => $faction ? $faction : null,
             ));
         }
 
@@ -775,6 +859,7 @@ try {
         // Bank
         // -------------------------
         case 'addMoney': {
+            clanRequireCsrf();
             requireClanSchema($db);
             $amount = (int)$param;
             if ($amount < 1) $amount = 1;
@@ -798,6 +883,7 @@ try {
 
                 walletLedger($db, $clanId, $userId, $amount, 'bank.deposit', array('count'=>$amount));
                 clanAudit($db, $clanId, $userId, 'bank.deposit', 0, array('count'=>$amount, 'date'=>date('d.m H:i'), 'user_new'=>isset($_SESSION['login'])?$_SESSION['login']:''));
+                clanQuestProgress($db, $clanId, 'donate_money', $amount);
 
                 $db->commit();
                 respond(true, 'Средства внесены на счёт клана.', array('balance'=>$new));
@@ -808,6 +894,7 @@ try {
         }
 
         case 'minusMoney': {
+            clanRequireCsrf();
             requireClanSchema($db);
             $amount = (int)$param;
             if ($amount < 1) $amount = 1;
@@ -844,6 +931,7 @@ try {
         // Leave
         // -------------------------
         case 'left': {
+            clanRequireCsrf();
             requireClanSchema($db);
             $mem = clanGetMembership($db, $userId);
             if (!$mem) respond(false, 'Вы не состоите в клане.', array());
@@ -861,6 +949,12 @@ try {
             $stmt->bind_param('i', $userId);
             $stmt->execute();
             $stmt->close();
+            if (tableExists($db, 'base_clans_users')) {
+                $stmt = $db->prepare("DELETE FROM base_clans_users WHERE user_id=?");
+                $stmt->bind_param('i', $userId);
+                $stmt->execute();
+                $stmt->close();
+            }
 
             clanAudit($db, $clanId, $userId, 'member.leave', $userId, array('date'=>date('d.m H:i'), 'user_new'=>isset($_SESSION['login'])?$_SESSION['login']:''));
             respond(true, 'Вы покинули клан.', array());
@@ -942,6 +1036,7 @@ try {
         // Management actions
         // -------------------------
         case 'goNotifyClan': {
+            clanRequireCsrf();
             requireClanSchema($db);
             $mem = clanGetMembership($db, $userId);
             if (!$mem) respond(false, 'Вы не состоите в клане.', array());
@@ -967,6 +1062,7 @@ try {
         }
 
         case 'goStatusClan': {
+            clanRequireCsrf();
             requireClanSchema($db);
             $mem = clanGetMembership($db, $userId);
             if (!$mem) respond(false, 'Вы не состоите в клане.', array());
@@ -1002,6 +1098,7 @@ try {
         }
 
         case 'goDeleteClan': {
+            clanRequireCsrf();
             requireClanSchema($db);
             $mem = clanGetMembership($db, $userId);
             if (!$mem) respond(false, 'Вы не состоите в клане.', array());
@@ -1035,12 +1132,19 @@ try {
             $stmt->bind_param('ii', $clanId, $targetId);
             $stmt->execute();
             $stmt->close();
+            if (tableExists($db, 'base_clans_users')) {
+                $stmt = $db->prepare("DELETE FROM base_clans_users WHERE user_id=? AND clan_id=?");
+                $stmt->bind_param('ii', $targetId, $clanId);
+                $stmt->execute();
+                $stmt->close();
+            }
 
             clanAudit($db, $clanId, $userId, 'member.kick', $targetId, array('date'=>date('d.m H:i'), 'user_new'=>isset($_SESSION['login'])?$_SESSION['login']:'', 'target'=>$login));
             respond(true, 'Игрок исключён из клана.', array());
         }
 
         case 'goLeaderClan': {
+            clanRequireCsrf();
             requireClanSchema($db);
             $mem = clanGetMembership($db, $userId);
             if (!$mem) respond(false, 'Вы не состоите в клане.', array());
@@ -1078,6 +1182,16 @@ try {
                 $stmt->bind_param('iii', $leaderRole, $clanId, $targetId);
                 $stmt->execute();
                 $stmt->close();
+                if (tableExists($db, 'base_clans_users')) {
+                    $stmt = $db->prepare("UPDATE base_clans_users SET `group`=2 WHERE clan_id=?");
+                    $stmt->bind_param('i', $clanId);
+                    $stmt->execute();
+                    $stmt->close();
+                    $stmt = $db->prepare("UPDATE base_clans_users SET `group`=1 WHERE clan_id=? AND user_id=?");
+                    $stmt->bind_param('ii', $clanId, $targetId);
+                    $stmt->execute();
+                    $stmt->close();
+                }
 
                 clanAudit($db, $clanId, $userId, 'leader.assign', $targetId, array('date'=>date('d.m H:i'), 'user_new'=>isset($_SESSION['login'])?$_SESSION['login']:'', 'target'=>$login));
 
@@ -1091,6 +1205,7 @@ try {
         }
 
         case 'goUnleaderClan': {
+            clanRequireCsrf();
             requireClanSchema($db);
             $mem = clanGetMembership($db, $userId);
             if (!$mem) respond(false, 'Вы не состоите в клане.', array());
@@ -1113,6 +1228,12 @@ try {
             $stmt->execute();
             $aff = $stmt->affected_rows;
             $stmt->close();
+            if ($aff > 0 && tableExists($db, 'base_clans_users')) {
+                $stmt = $db->prepare("UPDATE base_clans_users SET `group`=3 WHERE clan_id=? AND user_id=?");
+                $stmt->bind_param('ii', $clanId, $targetId);
+                $stmt->execute();
+                $stmt->close();
+            }
 
             if ($aff <= 0) respond(false, 'Не удалось изменить роль (проверьте, что игрок в клане).', array());
 
@@ -1162,6 +1283,7 @@ try {
         }
 
         case 'clanStorageAdd': {
+            clanRequireCsrf();
             requireClanSchema($db);
             $clanId = pInt('clan_id', 0);
             $itemId = pInt('item_id', 0);
@@ -1198,6 +1320,7 @@ try {
                 }
 
                 clanAudit($db, $clanId, $userId, 'storage.deposit', 0, array('item_id'=>$itemId,'count'=>$amount,'date'=>date('d.m H:i'),'user_new'=>isset($_SESSION['login'])?$_SESSION['login']:''));
+                clanQuestProgress($db, $clanId, 'donate_items', $amount);
 
                 $db->commit();
 
@@ -1216,6 +1339,7 @@ try {
         }
 
         case 'clanStorageTake': {
+            clanRequireCsrf();
             requireClanSchema($db);
             $clanId = pInt('clan_id', 0);
             $itemId = pInt('item_id', 0);
@@ -1349,6 +1473,7 @@ try {
         }
 
         case 'shopBuy': {
+            clanRequireCsrf();
             requireClanSchema($db);
             $clanId = pInt('clan_id', 0);
             $catalogId = pInt('catalog_id', 0);
@@ -1389,6 +1514,24 @@ try {
 
             $db->begin_transaction();
             try {
+                $stockCol = clanShopStockColumn($db);
+                if ($stockCol && tableExists($db,'clan_shop_stock')) {
+                    $rowStock = fetchOne($db, "SELECT ".$stockCol." AS stock FROM clan_shop_stock WHERE clan_id=? AND catalog_id=? FOR UPDATE", 'ii', array($clanId, $catalogId));
+                    if ($rowStock) {
+                        $stock = (int)$rowStock['stock'];
+                        if ($stock > 0 && $stock < $amount) {
+                            throw new Exception('Недостаточно товара на складе клана.');
+                        }
+                        if ($stock > 0) {
+                            $newStock = $stock - $amount;
+                            $stmt = $db->prepare("UPDATE clan_shop_stock SET ".$stockCol."=? WHERE clan_id=? AND catalog_id=?");
+                            $stmt->bind_param('iii', $newStock, $clanId, $catalogId);
+                            $stmt->execute();
+                            $stmt->close();
+                        }
+                    }
+                }
+
                 $bal = walletGetForUpdate($db, $clanId);
                 if ($bal < $cost) throw new Exception('Недостаточно средств на счёте клана.');
 
@@ -1429,6 +1572,7 @@ try {
         }
 
         case 'setFaction': {
+            clanRequireCsrf();
             requireClanSchema($db);
             $mem = clanGetMembership($db, $userId);
             if (!$mem) respond(false, 'Вы не состоите в клане.', array());
@@ -1453,6 +1597,537 @@ try {
         }
 
         // -------------------------
+        // Invites / Applications / Roles
+        // -------------------------
+        case 'inviteUser': {
+            clanRequireCsrf();
+            requireClanSchema($db);
+            $mem = clanGetMembership($db, $userId);
+            if (!$mem) respond(false, 'Вы не состоите в клане.', array());
+            clanRequirePerm($db, $userId, 'clan.members.invite');
+            if (!tableExists($db, 'clan_invites')) respond(false, 'Модуль приглашений не установлен.', array());
+
+            $login = pStr('login', '');
+            $inviteUserId = pInt('user_id', 0);
+            if ($inviteUserId <= 0 && $login !== '') {
+                $row = fetchOne($db, "SELECT id FROM users WHERE login=? LIMIT 1", 's', array($login));
+                $inviteUserId = $row ? (int)$row['id'] : 0;
+            }
+            if ($inviteUserId <= 0) respond(false, 'Игрок не найден.', array());
+
+            $already = clanGetMembership($db, $inviteUserId);
+            if ($already) respond(false, 'Игрок уже состоит в клане.', array());
+
+            $clanId = (int)$mem['clan_id'];
+            $policy = fetchOne($db, "SELECT join_policy FROM clans WHERE id=? LIMIT 1", 'i', array($clanId));
+            if ($policy && $policy['join_policy'] === 'open') {
+                respond(false, 'Для открытых кланов приглашение не требуется.', array());
+            }
+            $existing = fetchOne($db, "SELECT id FROM clan_invites WHERE clan_id=? AND invited_user_id=? LIMIT 1", 'ii', array($clanId, $inviteUserId));
+            if ($existing) respond(false, 'Приглашение уже отправлено.', array());
+
+            $stmt = $db->prepare("INSERT INTO clan_invites (clan_id, invited_user_id, invited_by, created_at) VALUES (?,?,?,NOW())");
+            $stmt->bind_param('iii', $clanId, $inviteUserId, $userId);
+            $stmt->execute();
+            $stmt->close();
+
+            if (tableExists($db, 'user_clan_accept')) {
+                $stmt = $db->prepare("INSERT INTO user_clan_accept (user_id, clan_id, status) VALUES (?,?,0)");
+                if ($stmt) {
+                    $stmt->bind_param('ii', $inviteUserId, $clanId);
+                    $stmt->execute();
+                    $stmt->close();
+                }
+            }
+
+            clanAudit($db, $clanId, $userId, 'member.invite', $inviteUserId, array('date'=>date('d.m H:i'),'user_new'=>$login));
+            respond(true, 'Приглашение отправлено.', array());
+        }
+
+        case 'acceptInvite': {
+            clanRequireCsrf();
+            requireClanSchema($db);
+            if (!tableExists($db, 'clan_invites')) respond(false, 'Модуль приглашений не установлен.', array());
+            $inviteId = pInt('invite_id', 0);
+            if ($inviteId <= 0) respond(false, 'Некорректное приглашение.', array());
+
+            $inv = fetchOne($db, "SELECT clan_id, invited_user_id FROM clan_invites WHERE id=? LIMIT 1", 'i', array($inviteId));
+            if (!$inv || (int)$inv['invited_user_id'] !== $userId) respond(false, 'Приглашение не найдено.', array());
+
+            $member = clanGetMembership($db, $userId);
+            if ($member) respond(false, 'Вы уже состоите в клане.', array());
+
+            $db->begin_transaction();
+            try {
+                $roleMap = clanEnsureDefaultRoles($db, (int)$inv['clan_id']);
+                $memberRole = isset($roleMap['Участник']) ? (int)$roleMap['Участник'] : 0;
+                if ($memberRole <= 0) throw new Exception('Не удалось определить роль.');
+
+                $stmt = $db->prepare("INSERT INTO clan_members (clan_id, user_id, role_id) VALUES (?,?,?)");
+                $stmt->bind_param('iii', $inv['clan_id'], $userId, $memberRole);
+                $stmt->execute();
+                $stmt->close();
+
+                if (tableExists($db, 'base_clans_users')) {
+                    $stmt = $db->prepare("INSERT INTO base_clans_users (user_id, clan_id, raiting, status, `group`) VALUES (?,?,0,'Участник',3)");
+                    $stmt->bind_param('ii', $userId, $inv['clan_id']);
+                    $stmt->execute();
+                    $stmt->close();
+                }
+
+                $stmt = $db->prepare("DELETE FROM clan_invites WHERE id=?");
+                $stmt->bind_param('i', $inviteId);
+                $stmt->execute();
+                $stmt->close();
+
+                if (tableExists($db, 'user_clan_accept')) {
+                    $stmt = $db->prepare("DELETE FROM user_clan_accept WHERE user_id=? AND clan_id=?");
+                    $stmt->bind_param('ii', $userId, $inv['clan_id']);
+                    $stmt->execute();
+                    $stmt->close();
+                }
+
+                clanAudit($db, (int)$inv['clan_id'], $userId, 'member.join', $userId, array('date'=>date('d.m H:i'),'user_new'=>isset($_SESSION['login'])?$_SESSION['login']:''));
+                $db->commit();
+                respond(true, 'Вы вступили в клан.', array());
+            } catch (Exception $e) {
+                $db->rollback();
+                respond(false, 'Ошибка вступления в клан.', array());
+            }
+        }
+
+        case 'declineInvite': {
+            clanRequireCsrf();
+            requireClanSchema($db);
+            if (!tableExists($db, 'clan_invites')) respond(false, 'Модуль приглашений не установлен.', array());
+            $inviteId = pInt('invite_id', 0);
+            if ($inviteId <= 0) respond(false, 'Некорректное приглашение.', array());
+            $stmt = $db->prepare("DELETE FROM clan_invites WHERE id=? AND invited_user_id=?");
+            $stmt->bind_param('ii', $inviteId, $userId);
+            $stmt->execute();
+            $affected = $stmt->affected_rows;
+            $stmt->close();
+            if ($affected > 0 && tableExists($db, 'user_clan_accept')) {
+                $stmt = $db->prepare("DELETE FROM user_clan_accept WHERE user_id=?");
+                $stmt->bind_param('i', $userId);
+                $stmt->execute();
+                $stmt->close();
+            }
+            if ($affected > 0) respond(true, 'Приглашение отклонено.', array());
+            respond(false, 'Приглашение не найдено.', array());
+        }
+
+        case 'applyClan': {
+            clanRequireCsrf();
+            requireClanSchema($db);
+            if (!tableExists($db, 'clan_applications')) respond(false, 'Модуль заявок не установлен.', array());
+            $clanId = pInt('clan_id', 0);
+            if ($clanId <= 0) respond(false, 'Некорректный клан.', array());
+            if (clanGetMembership($db, $userId)) respond(false, 'Вы уже в клане.', array());
+
+            $policy = fetchOne($db, "SELECT join_policy FROM clans WHERE id=? AND is_deleted=0 LIMIT 1", 'i', array($clanId));
+            if (!$policy) respond(false, 'Клан не найден.', array());
+            if ($policy['join_policy'] === 'invite_only') {
+                respond(false, 'Вступление только по приглашению.', array());
+            }
+            if ($policy['join_policy'] === 'open') {
+                $db->begin_transaction();
+                try {
+                    $roleMap = clanEnsureDefaultRoles($db, $clanId);
+                    $memberRole = isset($roleMap['Участник']) ? (int)$roleMap['Участник'] : 0;
+                    if ($memberRole <= 0) throw new Exception('Не удалось определить роль.');
+                    $stmt = $db->prepare("INSERT INTO clan_members (clan_id, user_id, role_id) VALUES (?,?,?)");
+                    $stmt->bind_param('iii', $clanId, $userId, $memberRole);
+                    $stmt->execute();
+                    $stmt->close();
+                    if (tableExists($db, 'base_clans_users')) {
+                        $stmt = $db->prepare("INSERT INTO base_clans_users (user_id, clan_id, raiting, status, `group`) VALUES (?,?,0,'Участник',3)");
+                        $stmt->bind_param('ii', $userId, $clanId);
+                        $stmt->execute();
+                        $stmt->close();
+                    }
+                    clanAudit($db, $clanId, $userId, 'member.join', $userId, array('date'=>date('d.m H:i'),'user_new'=>isset($_SESSION['login'])?$_SESSION['login']:''));
+                    $db->commit();
+                    respond(true, 'Вы вступили в клан.', array());
+                } catch (Exception $e) {
+                    $db->rollback();
+                    respond(false, 'Ошибка вступления.', array());
+                }
+            }
+
+            $exists = fetchOne($db, "SELECT id FROM clan_applications WHERE clan_id=? AND user_id=? LIMIT 1", 'ii', array($clanId, $userId));
+            if ($exists) respond(false, 'Заявка уже отправлена.', array());
+
+            $stmt = $db->prepare("INSERT INTO clan_applications (clan_id, user_id, created_at) VALUES (?,?,NOW())");
+            $stmt->bind_param('ii', $clanId, $userId);
+            $stmt->execute();
+            $stmt->close();
+            respond(true, 'Заявка отправлена.', array());
+        }
+
+        case 'acceptApplication': {
+            clanRequireCsrf();
+            requireClanSchema($db);
+            if (!tableExists($db, 'clan_applications')) respond(false, 'Модуль заявок не установлен.', array());
+            $appId = pInt('application_id', 0);
+            if ($appId <= 0) respond(false, 'Некорректная заявка.', array());
+            $mem = clanGetMembership($db, $userId);
+            if (!$mem) respond(false, 'Вы не состоите в клане.', array());
+            clanRequirePerm($db, $userId, 'clan.members.invite');
+
+            $app = fetchOne($db, "SELECT clan_id, user_id FROM clan_applications WHERE id=? LIMIT 1", 'i', array($appId));
+            if (!$app || (int)$app['clan_id'] !== (int)$mem['clan_id']) respond(false, 'Заявка не найдена.', array());
+
+            $db->begin_transaction();
+            try {
+                $roleMap = clanEnsureDefaultRoles($db, (int)$app['clan_id']);
+                $memberRole = isset($roleMap['Участник']) ? (int)$roleMap['Участник'] : 0;
+                if ($memberRole <= 0) throw new Exception('Не удалось определить роль.');
+
+                $stmt = $db->prepare("INSERT INTO clan_members (clan_id, user_id, role_id) VALUES (?,?,?)");
+                $stmt->bind_param('iii', $app['clan_id'], $app['user_id'], $memberRole);
+                $stmt->execute();
+                $stmt->close();
+                if (tableExists($db, 'base_clans_users')) {
+                    $stmt = $db->prepare("INSERT INTO base_clans_users (user_id, clan_id, raiting, status, `group`) VALUES (?,?,0,'Участник',3)");
+                    $stmt->bind_param('ii', $app['user_id'], $app['clan_id']);
+                    $stmt->execute();
+                    $stmt->close();
+                }
+
+                $stmt = $db->prepare("DELETE FROM clan_applications WHERE id=?");
+                $stmt->bind_param('i', $appId);
+                $stmt->execute();
+                $stmt->close();
+
+                clanAudit($db, (int)$app['clan_id'], $userId, 'member.join', (int)$app['user_id'], array('date'=>date('d.m H:i'),'user_new'=>''));
+                $db->commit();
+                respond(true, 'Заявка принята.', array());
+            } catch (Exception $e) {
+                $db->rollback();
+                respond(false, 'Ошибка принятия.', array());
+            }
+        }
+
+        case 'declineApplication': {
+            clanRequireCsrf();
+            requireClanSchema($db);
+            if (!tableExists($db, 'clan_applications')) respond(false, 'Модуль заявок не установлен.', array());
+            $appId = pInt('application_id', 0);
+            if ($appId <= 0) respond(false, 'Некорректная заявка.', array());
+            $mem = clanGetMembership($db, $userId);
+            if (!$mem) respond(false, 'Вы не состоите в клане.', array());
+            clanRequirePerm($db, $userId, 'clan.members.invite');
+
+            $stmt = $db->prepare("DELETE FROM clan_applications WHERE id=? AND clan_id=?");
+            $stmt->bind_param('ii', $appId, $mem['clan_id']);
+            $stmt->execute();
+            $affected = $stmt->affected_rows;
+            $stmt->close();
+            if ($affected > 0) respond(true, 'Заявка отклонена.', array());
+            respond(false, 'Заявка не найдена.', array());
+        }
+
+        case 'invitesList': {
+            requireClanSchema($db);
+            if (!tableExists($db, 'clan_invites')) respond(true, '', array('invites'=>array()));
+            $rows = fetchAll($db,
+                "SELECT ci.id, ci.clan_id, ci.invited_user_id, ci.invited_by, ci.created_at, c.name AS clan_name"
+                . " FROM clan_invites ci JOIN clans c ON c.id=ci.clan_id WHERE ci.invited_user_id=? ORDER BY ci.created_at DESC",
+                'i',
+                array($userId)
+            );
+            respond(true, '', array('invites'=>$rows));
+        }
+
+        case 'applicationsList': {
+            requireClanSchema($db);
+            if (!tableExists($db, 'clan_applications')) respond(true, '', array('applications'=>array()));
+            $mem = clanGetMembership($db, $userId);
+            if (!$mem) respond(false, 'Вы не состоите в клане.', array());
+            clanRequirePerm($db, $userId, 'clan.members.invite');
+            $rows = fetchAll($db,
+                "SELECT ca.id, ca.user_id, ca.message, ca.created_at, u.login"
+                . " FROM clan_applications ca JOIN users u ON u.id=ca.user_id"
+                . " WHERE ca.clan_id=? AND ca.status='pending' ORDER BY ca.created_at DESC",
+                'i',
+                array($mem['clan_id'])
+            );
+            respond(true, '', array('applications'=>$rows));
+        }
+
+        case 'memberPromote': {
+            clanRequireCsrf();
+            requireClanSchema($db);
+            $targetId = pInt('user_id', 0);
+            if ($targetId <= 0) respond(false, 'Некорректный участник.', array());
+            $mem = clanGetMembership($db, $userId);
+            if (!$mem) respond(false, 'Вы не состоите в клане.', array());
+            clanRequirePerm($db, $userId, 'clan.members.promote');
+
+            $clanId = (int)$mem['clan_id'];
+            $roleMap = clanEnsureDefaultRoles($db, $clanId);
+            $roleOfficer = isset($roleMap['Офицер']) ? (int)$roleMap['Офицер'] : 0;
+            if ($roleOfficer <= 0) respond(false, 'Роли не настроены.', array());
+
+            $stmt = $db->prepare("UPDATE clan_members SET role_id=? WHERE clan_id=? AND user_id=?");
+            $stmt->bind_param('iii', $roleOfficer, $clanId, $targetId);
+            $stmt->execute();
+            $stmt->close();
+            if (tableExists($db, 'base_clans_users')) {
+                $stmt = $db->prepare("UPDATE base_clans_users SET `group`=2 WHERE user_id=? AND clan_id=?");
+                $stmt->bind_param('ii', $targetId, $clanId);
+                $stmt->execute();
+                $stmt->close();
+            }
+            clanAudit($db, $clanId, $userId, 'member.promote', $targetId, array('date'=>date('d.m H:i')));
+            respond(true, 'Участник повышен.', array());
+        }
+
+        case 'memberDemote': {
+            clanRequireCsrf();
+            requireClanSchema($db);
+            $targetId = pInt('user_id', 0);
+            if ($targetId <= 0) respond(false, 'Некорректный участник.', array());
+            $mem = clanGetMembership($db, $userId);
+            if (!$mem) respond(false, 'Вы не состоите в клане.', array());
+            clanRequirePerm($db, $userId, 'clan.members.demote');
+
+            $clanId = (int)$mem['clan_id'];
+            $roleMap = clanEnsureDefaultRoles($db, $clanId);
+            $roleMember = isset($roleMap['Участник']) ? (int)$roleMap['Участник'] : 0;
+            if ($roleMember <= 0) respond(false, 'Роли не настроены.', array());
+
+            $stmt = $db->prepare("UPDATE clan_members SET role_id=? WHERE clan_id=? AND user_id=?");
+            $stmt->bind_param('iii', $roleMember, $clanId, $targetId);
+            $stmt->execute();
+            $stmt->close();
+            if (tableExists($db, 'base_clans_users')) {
+                $stmt = $db->prepare("UPDATE base_clans_users SET `group`=3 WHERE user_id=? AND clan_id=?");
+                $stmt->bind_param('ii', $targetId, $clanId);
+                $stmt->execute();
+                $stmt->close();
+            }
+            clanAudit($db, $clanId, $userId, 'member.demote', $targetId, array('date'=>date('d.m H:i')));
+            respond(true, 'Участник понижен.', array());
+        }
+
+        // -------------------------
+        // Quests
+        // -------------------------
+        case 'questsList': {
+            requireClanSchema($db);
+            $mem = clanGetMembership($db, $userId);
+            if (!$mem) respond(false, 'Вы не состоите в клане.', array());
+            if (!tableExists($db,'clan_quests_catalog')) respond(true, '', array('catalog'=>array(),'active'=>array()));
+
+            $catalog = fetchAll($db, "SELECT id, name, description, type, target_value, reward_clan_money, reward_rating, duration_hours FROM clan_quests_catalog WHERE is_enabled=1 ORDER BY sort_order ASC, id ASC", '', array());
+            $active = array();
+            if (tableExists($db,'clan_quests_active')) {
+                $active = fetchAll($db, "SELECT qa.*, qc.name, qc.description, qc.type, qc.target_value, qc.reward_clan_money, qc.reward_rating FROM clan_quests_active qa JOIN clan_quests_catalog qc ON qc.id=qa.quest_id WHERE qa.clan_id=? ORDER BY qa.started_at DESC", 'i', array($mem['clan_id']));
+            }
+            respond(true, '', array('catalog'=>$catalog,'active'=>$active));
+        }
+
+        case 'questAccept': {
+            clanRequireCsrf();
+            requireClanSchema($db);
+            $mem = clanGetMembership($db, $userId);
+            if (!$mem) respond(false, 'Вы не состоите в клане.', array());
+            clanRequirePerm($db, $userId, 'clan.quest.manage');
+            if (!tableExists($db,'clan_quests_active') || !tableExists($db,'clan_quests_catalog')) respond(false, 'Квесты не настроены.', array());
+            $questId = pInt('quest_id', 0);
+            if ($questId <= 0) respond(false, 'Некорректный квест.', array());
+
+            $active = fetchOne($db, "SELECT id FROM clan_quests_active WHERE clan_id=? AND is_completed=0 AND ends_at > NOW() LIMIT 1", 'i', array($mem['clan_id']));
+            if ($active) respond(false, 'У клана уже есть активный квест.', array());
+
+            $quest = fetchOne($db, "SELECT id, duration_hours FROM clan_quests_catalog WHERE id=? AND is_enabled=1 LIMIT 1", 'i', array($questId));
+            if (!$quest) respond(false, 'Квест не найден.', array());
+
+            $stmt = $db->prepare("INSERT INTO clan_quests_active (clan_id, quest_id, started_at, ends_at, progress, is_completed, assigned_by) VALUES (?,?,NOW(),DATE_ADD(NOW(), INTERVAL ? HOUR),0,0,?)");
+            $hours = (int)$quest['duration_hours'];
+            $clanId = (int)$mem['clan_id'];
+            $stmt->bind_param('iiii', $clanId, $questId, $hours, $userId);
+            $stmt->execute();
+            $stmt->close();
+            respond(true, 'Квест принят.', array());
+        }
+
+        case 'questClaim': {
+            clanRequireCsrf();
+            requireClanSchema($db);
+            $mem = clanGetMembership($db, $userId);
+            if (!$mem) respond(false, 'Вы не состоите в клане.', array());
+            clanRequirePerm($db, $userId, 'clan.quest.manage');
+            $activeId = pInt('active_id', 0);
+            if ($activeId <= 0) respond(false, 'Некорректный квест.', array());
+
+            $db->begin_transaction();
+            try {
+                $row = fetchOne($db,
+                    "SELECT qa.id, qa.progress, qa.is_completed, qa.claimed_at, qc.target_value, qc.reward_clan_money, qc.reward_rating"
+                    . " FROM clan_quests_active qa JOIN clan_quests_catalog qc ON qc.id=qa.quest_id"
+                    . " WHERE qa.id=? AND qa.clan_id=? FOR UPDATE",
+                    'ii',
+                    array($activeId, $mem['clan_id'])
+                );
+                if (!$row) throw new Exception('Квест не найден.');
+                if (!empty($row['claimed_at'])) throw new Exception('Награда уже получена.');
+
+                $completed = (int)$row['is_completed'];
+                if (!$completed && (int)$row['target_value'] > 0 && (int)$row['progress'] < (int)$row['target_value']) {
+                    throw new Exception('Квест ещё не завершён.');
+                }
+
+                $stmt = $db->prepare("UPDATE clan_quests_active SET claimed_at=NOW(), is_completed=1 WHERE id=?");
+                $stmt->bind_param('i', $activeId);
+                $stmt->execute();
+                $stmt->close();
+
+                $rewardMoney = (int)$row['reward_clan_money'];
+                if ($rewardMoney > 0) {
+                    $bal = walletGetForUpdate($db, (int)$mem['clan_id']);
+                    walletSet($db, (int)$mem['clan_id'], $bal + $rewardMoney);
+                    walletLedger($db, (int)$mem['clan_id'], $userId, $rewardMoney, 'quest.reward', array('active_id'=>$activeId));
+                }
+
+                if (columnExists($db,'clans','rating')) {
+                    $stmt = $db->prepare("UPDATE clans SET rating = rating + ? WHERE id=?");
+                    $rating = (int)$row['reward_rating'];
+                    $stmt->bind_param('ii', $rating, $mem['clan_id']);
+                    $stmt->execute();
+                    $stmt->close();
+                }
+
+                $db->commit();
+                respond(true, 'Награда получена.', array('reward_money'=>$rewardMoney, 'reward_rating'=>(int)$row['reward_rating']));
+            } catch (Exception $e) {
+                $db->rollback();
+                respond(false, $e->getMessage());
+            }
+        }
+
+        // -------------------------
+        // Locations
+        // -------------------------
+        case 'locationsList': {
+            requireClanSchema($db);
+            $mem = clanGetMembership($db, $userId);
+            if (!$mem) respond(false, 'Вы не состоите в клане.', array());
+            if (!tableExists($db,'clan_locations_catalog') || !tableExists($db,'clan_locations_state')) {
+                respond(true, '', array('locations'=>array()));
+            }
+            $catalog = fetchAll($db, "SELECT id, name, description, icon, max_level, base_cost, cost_mult, base_income, income_mult, cooldown_seconds FROM clan_locations_catalog WHERE is_enabled=1 ORDER BY sort_order ASC, id ASC", '', array());
+            $out = array();
+            for ($i=0; $i<count($catalog); $i++) {
+                $c = $catalog[$i];
+                $state = fetchOne($db, "SELECT level, last_collect_at FROM clan_locations_state WHERE clan_id=? AND location_id=? LIMIT 1", 'ii', array($mem['clan_id'], $c['id']));
+                $level = $state ? (int)$state['level'] : 0;
+                $lastCollect = $state ? $state['last_collect_at'] : null;
+                $out[] = array(
+                    'id' => (int)$c['id'],
+                    'name' => $c['name'],
+                    'description' => $c['description'],
+                    'icon' => $c['icon'],
+                    'level' => $level,
+                    'max_level' => (int)$c['max_level'],
+                    'base_cost' => (int)$c['base_cost'],
+                    'cost_mult' => (float)$c['cost_mult'],
+                    'base_income' => (int)$c['base_income'],
+                    'income_mult' => (float)$c['income_mult'],
+                    'cooldown_seconds' => (int)$c['cooldown_seconds'],
+                    'last_collect_at' => $lastCollect
+                );
+            }
+            respond(true, '', array('locations'=>$out));
+        }
+
+        case 'locationsUpgrade': {
+            clanRequireCsrf();
+            requireClanSchema($db);
+            $mem = clanGetMembership($db, $userId);
+            if (!$mem) respond(false, 'Вы не состоите в клане.', array());
+            clanRequirePerm($db, $userId, 'clan.location.manage');
+            $locationId = pInt('location_id', 0);
+            if ($locationId <= 0) respond(false, 'Некорректная локация.', array());
+            if (!tableExists($db,'clan_locations_catalog') || !tableExists($db,'clan_locations_state')) respond(false, 'Локации не настроены.', array());
+
+            $db->begin_transaction();
+            try {
+                $cat = fetchOne($db, "SELECT max_level, base_cost, cost_mult FROM clan_locations_catalog WHERE id=? AND is_enabled=1 LIMIT 1", 'i', array($locationId));
+                if (!$cat) throw new Exception('Локация не найдена.');
+                $state = fetchOne($db, "SELECT level FROM clan_locations_state WHERE clan_id=? AND location_id=? FOR UPDATE", 'ii', array($mem['clan_id'], $locationId));
+                $level = $state ? (int)$state['level'] : 0;
+                $max = (int)$cat['max_level'];
+                if ($level >= $max) throw new Exception('Достигнут максимум уровня.');
+                $next = $level + 1;
+                $cost = (int)round((int)$cat['base_cost'] * pow((float)$cat['cost_mult'], max(0, $next - 1)));
+                $bal = walletGetForUpdate($db, (int)$mem['clan_id']);
+                if ($bal < $cost) throw new Exception('Недостаточно средств на счёте клана.');
+                walletSet($db, (int)$mem['clan_id'], $bal - $cost);
+                walletLedger($db, (int)$mem['clan_id'], $userId, -$cost, 'location.upgrade', array('location_id'=>$locationId,'level'=>$next));
+
+                if ($state) {
+                    $stmt = $db->prepare("UPDATE clan_locations_state SET level=? WHERE clan_id=? AND location_id=?");
+                    $stmt->bind_param('iii', $next, $mem['clan_id'], $locationId);
+                } else {
+                    $stmt = $db->prepare("INSERT INTO clan_locations_state (clan_id, location_id, level, last_collect_at) VALUES (?,?,?,NULL)");
+                    $stmt->bind_param('iii', $mem['clan_id'], $locationId, $next);
+                }
+                $stmt->execute();
+                $stmt->close();
+                $db->commit();
+                respond(true, 'Локация улучшена.', array('level'=>$next,'cost'=>$cost));
+            } catch (Exception $e) {
+                $db->rollback();
+                respond(false, $e->getMessage());
+            }
+        }
+
+        case 'locationsCollect': {
+            clanRequireCsrf();
+            requireClanSchema($db);
+            $mem = clanGetMembership($db, $userId);
+            if (!$mem) respond(false, 'Вы не состоите в клане.', array());
+            clanRequirePerm($db, $userId, 'clan.location.manage');
+            $locationId = pInt('location_id', 0);
+            if ($locationId <= 0) respond(false, 'Некорректная локация.', array());
+            if (!tableExists($db,'clan_locations_catalog') || !tableExists($db,'clan_locations_state')) respond(false, 'Локации не настроены.', array());
+
+            $db->begin_transaction();
+            try {
+                $cat = fetchOne($db, "SELECT base_income, income_mult, cooldown_seconds FROM clan_locations_catalog WHERE id=? AND is_enabled=1 LIMIT 1", 'i', array($locationId));
+                if (!$cat) throw new Exception('Локация не найдена.');
+                $state = fetchOne($db, "SELECT level, last_collect_at FROM clan_locations_state WHERE clan_id=? AND location_id=? FOR UPDATE", 'ii', array($mem['clan_id'], $locationId));
+                if (!$state) throw new Exception('Локация ещё не развита.');
+                $level = (int)$state['level'];
+                if ($level <= 0) throw new Exception('Локация ещё не развита.');
+                $cooldown = (int)$cat['cooldown_seconds'];
+                if ($state['last_collect_at']) {
+                    $last = strtotime($state['last_collect_at']);
+                    if ($last && (time() - $last) < $cooldown) {
+                        throw new Exception('Сбор ещё недоступен.');
+                    }
+                }
+                $income = (int)round((int)$cat['base_income'] * pow((float)$cat['income_mult'], max(0, $level - 1)));
+                $bal = walletGetForUpdate($db, (int)$mem['clan_id']);
+                walletSet($db, (int)$mem['clan_id'], $bal + $income);
+                walletLedger($db, (int)$mem['clan_id'], $userId, $income, 'location.collect', array('location_id'=>$locationId,'level'=>$level));
+
+                $stmt = $db->prepare("UPDATE clan_locations_state SET last_collect_at=NOW() WHERE clan_id=? AND location_id=?");
+                $stmt->bind_param('ii', $mem['clan_id'], $locationId);
+                $stmt->execute();
+                $stmt->close();
+                $db->commit();
+                respond(true, 'Доход получен.', array('income'=>$income));
+            } catch (Exception $e) {
+                $db->rollback();
+                respond(false, $e->getMessage());
+            }
+        }
+
+        // -------------------------
         // Default
         // -------------------------
         default:
@@ -1463,4 +2138,3 @@ try {
     // Глобальная защита: не проливаем stacktrace в прод
     respond(false, 'Ошибка сервера: '.$e->getMessage(), array());
 }
-

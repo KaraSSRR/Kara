@@ -4589,6 +4589,7 @@ var GameBattle = function(info){
       _element_poke_info_my_lvl,
       _element_poke_info_my_ball,
       _element_poke_info_my_unik,
+      _element_poke_info_my_tera,
       _element_poke_info_my_tren,
       _element_poke_info_my_item,
       _element_poke_info_my_move,
@@ -4602,6 +4603,7 @@ var GameBattle = function(info){
       _element_poke_info_enemy_lvl,
       _element_poke_info_enemy_ball,
       _element_poke_info_enemy_unik,
+      _element_poke_info_enemy_tera,
       _element_poke_info_enemy_tren,
       _element_poke_info_enemy_item,
       _element_poke_info_enemy_stat,
@@ -4965,6 +4967,7 @@ var GameBattle = function(info){
     _transformMode = mode;
 
     var t = info && info['myTarget'] ? info['myTarget'] : null;
+    var teraType = t ? (t['tera_type'] || t['teraType'] || '') : '';
     var teraActive = t ? Number(t['tera_active'] || t['teraActive'] || 0) : 0;
     var megaActive = t ? Number(t['mega_active'] || t['megaActive'] || 0) : 0;
 
@@ -4984,13 +4987,23 @@ var GameBattle = function(info){
       $lbl.text('Тера');
       _element_transform_btn.toggleClass('is-active', teraActive === 1);
       _element_transform_btn.toggleClass('disabled', teraActive === 1);
-      _element_transform_btn.attr('title', teraActive === 1 ? 'Тера активна' : 'Тера (на следующий ход)');
+      if (teraType && String(teraType) !== '0') {
+        _element_transform_btn
+          .addClass('has-tera-type')
+          .find('.tera-type')
+          .attr('src', '/img/world/typs/' + teraType + '.png')
+          .attr('alt', teraType);
+      } else {
+        _element_transform_btn.removeClass('has-tera-type').find('.tera-type').attr('src', '').attr('alt', '');
+      }
+      _element_transform_btn.attr('title', (teraActive === 1 ? 'Тера активна' : 'Тера (на следующий ход)') + (teraType ? (' • Тип: ' + teraType) : ''));
       if (teraActive === 1) _pendingTransform = null;
     } else {
       $ico.attr('class','ico fas fa-bolt');
       $lbl.text('Мега');
       _element_transform_btn.toggleClass('is-active', megaActive === 1);
       _element_transform_btn.toggleClass('disabled', megaActive === 1);
+      _element_transform_btn.removeClass('has-tera-type').find('.tera-type').attr('src', '').attr('alt', '');
       _element_transform_btn.attr('title', megaActive === 1 ? 'Мега активна' : 'Мега (на следующий ход)');
       if (megaActive === 1) _pendingTransform = null;
     }
@@ -5746,6 +5759,29 @@ var GameBattle = function(info){
       var css3 = `
       .Battle.pkx-battle-v3{ position:relative; background:linear-gradient(180deg,#f8fafc 0%, #ffffff 70%); }
       .Battle.pkx-battle-v3 .PokemonBox{ background:linear-gradient(180deg,#ffffff 0%, #f8fafc 100%); border:1px solid rgba(148,163,184,.55); box-shadow:0 18px 38px rgba(15,23,42,.06); border-radius:16px; }
+      .Battle.pkx-battle-v3 .PokemonBox.is-tera-active{ box-shadow:0 0 0 2px rgba(59,130,246,.28), 0 18px 38px rgba(15,23,42,.08); }
+      .Battle.pkx-battle-v3 .PokemonBox .TeraBadge{
+        position:absolute;
+        top:8px;
+        right:44px;
+        display:inline-flex;
+        align-items:center;
+        gap:4px;
+        padding:3px 8px;
+        border-radius:999px;
+        background:rgba(255,255,255,.95);
+        border:1px solid rgba(148,163,184,.6);
+        font-size:10px;
+        font-weight:800;
+        color:#1f2937;
+        box-shadow:0 4px 12px rgba(15,23,42,.12);
+        z-index:3;
+      }
+      .Battle.pkx-battle-v3 .PokemonBox .TeraBadge img{ width:14px; height:14px; }
+      .Battle.pkx-battle-v3 .PokemonBox .TeraBadge.is-active{
+        border-color:rgba(59,130,246,.7);
+        box-shadow:0 0 0 2px rgba(59,130,246,.2), 0 6px 14px rgba(15,23,42,.15);
+      }
       .Battle.pkx-battle-v3 .PokemonBox:before{ background:linear-gradient(120deg,rgba(47,116,255,.07),rgba(34,197,94,.05)); }
       .Battle.pkx-battle-v3 .Content{ border-radius:16px; overflow:visible; box-shadow:0 18px 42px rgba(15,23,42,.06); }
       .Battle.pkx-battle-v3 .Content .Zone{ background:linear-gradient(180deg,#f8fafc 0%, #ffffff 100%); border-bottom:1px solid rgba(148,163,184,.35); }
@@ -5955,6 +5991,14 @@ var GameBattle = function(info){
         padding-top:4px;
       }
       .Battle.pkx-battle-v3 .PokemonB .Info .Buttons .buttonFight.Button.__transform .ico{ font-size:15px; line-height:15px; }
+      .Battle.pkx-battle-v3 .PokemonB .Info .Buttons .buttonFight.Button.__transform .tera-type{
+        width:16px;
+        height:16px;
+        display:none;
+      }
+      .Battle.pkx-battle-v3 .PokemonB .Info .Buttons .buttonFight.Button.__transform.has-tera-type .tera-type{
+        display:block;
+      }
       .Battle.pkx-battle-v3 .PokemonB .Info .Buttons .buttonFight.Button.__transform .lbl{
         display:block;
         font-size:9px;
@@ -6364,6 +6408,7 @@ var GameBattle = function(info){
         });
       }
       _element_poke_info_my_unik = $('<div />', {'class':'unikPokemonOne Unik __unik','html':''});
+      _element_poke_info_my_tera = $('<div />', {'class':'TeraBadge __tera', 'style':'display:none;'});
       _element_poke_info_my_item = $('<div />', {'class':'itemPokemonOne Item __item'});
       _element_poke_info_my_move = $('<div />', {'class':'MoveBox'}).append(
         $('<div />', {'class':'MovesList'})
@@ -6395,6 +6440,7 @@ var GameBattle = function(info){
           _element_poke_info_my_lvl,
           _element_poke_info_my_ball,
           _element_poke_info_my_unik,
+          _element_poke_info_my_tera,
           _element_poke_info_my_tren,
           _element_poke_info_my_item,
           $('<div />', {'class':'Bars'}).append(my_hp_bar_wrap, my_exp_bar_wrap)
@@ -6424,6 +6470,7 @@ var GameBattle = function(info){
       _element_poke_info_enemy_lvl  = $('<div />', {'class':'lvlPokemonTwo Lvl __lvl','html':'','style':'left:5px;'});
       _element_poke_info_enemy_ball = $('<div />', {'class':'ballPokemonTwo Ball __ball','style':'left:-15px;'});
       _element_poke_info_enemy_unik = $('<div />', {'class':'unikPokemonOne Unik __unik','html':''});
+      _element_poke_info_enemy_tera = $('<div />', {'class':'TeraBadge __tera', 'style':'display:none;'});
       _element_poke_info_enemy_item = $('<div />', {'class':'itemPokemonTwo Item __item'});
       _element_poke_info_enemy_tren = $('<div />', {'class':'Modif _modif_enemy'});
       _element_enemy_name = $('<div />', {'class':'Partner'});
@@ -6457,6 +6504,7 @@ var GameBattle = function(info){
         'style':'display:none;'
       }).append(
         $('<i />', {'class':'ico fas fa-gem'}),
+        $('<img />', {'class':'tera-type', 'alt':'', 'src':''}),
         $('<div />', {'class':'lbl', text:'Тера'})
       ).on('click', function(ev){
         ev.preventDefault(); ev.stopPropagation();
@@ -6518,6 +6566,7 @@ var GameBattle = function(info){
           _element_poke_info_enemy_lvl,
           _element_poke_info_enemy_ball,
           _element_poke_info_enemy_unik,
+          _element_poke_info_enemy_tera,
           _element_poke_info_enemy_tren,
           _element_poke_info_enemy_item,
           $('<div />', {'class':'Bars'}).append(
@@ -7477,6 +7526,27 @@ var GameBattle = function(info){
     element.find('div.__unik')
       .html(typePok + (typePok && plaguePok ? ' ' : '') + plaguePok)
       .attr('class', 'unikPokemonOne Unik __unik ' + info['type'] + '-color');
+
+    var teraType = (info['tera_type'] || info['teraType'] || '');
+    var teraActive = Number(info['tera_active'] || info['teraActive'] || 0);
+    var $box = element.find('.PokemonBox').first();
+    var $tera = $box.find('.TeraBadge').first();
+    if (!$tera.length) {
+      $tera = $('<div/>', {'class':'TeraBadge', 'style':'display:none;'}).appendTo($box);
+    }
+    if (teraType && String(teraType) !== '0') {
+      $tera
+        .show()
+        .toggleClass('is-active', teraActive === 1)
+        .attr('title', 'Тератип: ' + teraType)
+        .empty()
+        .append($('<img/>', {src:'/img/world/typs/' + teraType + '.png', alt:teraType}))
+        .append($('<span/>', {text:teraType}));
+      $box.toggleClass('is-tera-active', teraActive === 1);
+    } else {
+      $tera.hide().removeClass('is-active').empty();
+      $box.removeClass('is-tera-active');
+    }
 
     element.find('.imgPok')
       .removeClass('blank')
