@@ -221,6 +221,13 @@ class ActionBattle {
 
     private function _defaultAtk($atkID = 0, $attackNum = 0){
         // «Борьба» (Struggle) — безопасный дефолт, если нет нормальных атак.
+        $teraType = $this->resolveTeraTypeName($targetID['tera_type'] ?? '');
+        $teraActive = (int)($targetID['tera_active'] ?? 0);
+        if (!$my) {
+            $teraType = '';
+            $teraActive = 0;
+        }
+
         return [
             'id' => (int)$atkID,
             'name' => 'Борьба',
@@ -1422,7 +1429,7 @@ if (!empty($this->enemyData['tera']) && empty($this->enemyData['tera_used'])) {
             }
         }
 
-        $teraMsgEnemy = 'Соперник терасталлизовался! <img src="/img/world/typs/'.$teraTypeName.'.png" style="width:18px;vertical-align:middle;">';
+        $teraMsgEnemy = 'Соперник терасталлизовался!';
     }
 }
 
@@ -2022,8 +2029,8 @@ private function viewInfoTarget($targetID, $my = false) {
             'lvl'           => $lvl,
             'type2'         => ($typeSprite == 'normal' ? '' : $typeSprite),
             'type'          => $typeSprite,
-            'tera_type'     => (string)($this->resolveTeraTypeName($targetID['tera_type'] ?? '')),
-            'tera_active'   => (int)($targetID['tera_active'] ?? 0),
+            'tera_type'     => (string)$teraType,
+            'tera_active'   => $teraActive,
             'mega_can'      => (int)$mega_can,
             'mega_active'   => (int)$mega_active,
             'sex'           => $targetID['gender'] ?? 'Мальчик',

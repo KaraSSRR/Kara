@@ -4942,7 +4942,7 @@ var GameBattle = function(info){
     try{
       var t = info && info['myTarget'] ? info['myTarget'] : null;
       var myInfo = info && info['myInfo'] ? info['myInfo'] : info;
-      var teraType = t ? (t['tera_type'] || t['teraType'] || '') : '';
+      var teraType = t ? resolveTeraTypeName(t['tera_type'] || t['teraType'] || '') : '';
       var teraActive = t ? Number(t['tera_active'] || t['teraActive'] || 0) : 0;
       var megaCan = t ? (t['mega_can'] || t['megaCan'] || 0) : 0;
       var megaActive = t ? Number(t['mega_active'] || t['megaActive'] || 0) : 0;
@@ -4967,7 +4967,7 @@ var GameBattle = function(info){
     _transformMode = mode;
 
     var t = info && info['myTarget'] ? info['myTarget'] : null;
-    var teraType = t ? (t['tera_type'] || t['teraType'] || '') : '';
+    var teraType = t ? resolveTeraTypeName(t['tera_type'] || t['teraType'] || '') : '';
     var teraActive = t ? Number(t['tera_active'] || t['teraActive'] || 0) : 0;
     var megaActive = t ? Number(t['mega_active'] || t['megaActive'] || 0) : 0;
 
@@ -7488,6 +7488,19 @@ var GameBattle = function(info){
   // -----------------------------
   // Обновление покемона + атаки
   // -----------------------------
+  function resolveTeraTypeName(teraType){
+    if (teraType === null || typeof teraType === 'undefined') return '';
+    var map = {
+      1:'normal',2:'fire',3:'water',4:'electric',5:'grass',6:'ice',7:'fighting',8:'poison',9:'ground',10:'flying',
+      11:'psychic',12:'bug',13:'rock',14:'ghost',15:'dragon',16:'dark',17:'steel',18:'fairy',19:'stellar'
+    };
+    var s = String(teraType).trim();
+    if (s !== '' && /^[0-9]+$/.test(s)) {
+      return map[parseInt(s, 10)] || '';
+    }
+    return s.toLowerCase();
+  }
+
   this._updatePoke = function(element, info, my) {
     if (!(element && element.length && info)) return;
 
@@ -7527,14 +7540,14 @@ var GameBattle = function(info){
       .html(typePok + (typePok && plaguePok ? ' ' : '') + plaguePok)
       .attr('class', 'unikPokemonOne Unik __unik ' + info['type'] + '-color');
 
-    var teraType = (info['tera_type'] || info['teraType'] || '');
+    var teraType = resolveTeraTypeName(info['tera_type'] || info['teraType'] || '');
     var teraActive = Number(info['tera_active'] || info['teraActive'] || 0);
     var $box = element.find('.PokemonBox').first();
     var $tera = $box.find('.TeraBadge').first();
     if (!$tera.length) {
       $tera = $('<div/>', {'class':'TeraBadge', 'style':'display:none;'}).appendTo($box);
     }
-    if (teraType && String(teraType) !== '0') {
+    if (my && teraType && String(teraType) !== '0') {
       $tera
         .show()
         .toggleClass('is-active', teraActive === 1)
@@ -7606,14 +7619,15 @@ var GameBattle = function(info){
               try { curPP = parseInt(pp_atk[val['attack_num']], 10) || 0; } catch(e){ curPP = 0; }
               var maxPP = parseInt(val['pp'], 10) || 0;
 
-              var $mv = $('<div />', {'class':'Move', 'data-hotkey': hk, 'title':'['+hk+'] ' + (val['name']||'')})
+              var moveName = val['name'] || val['name_rus'] || val['title'] || '';
+              var $mv = $('<div />', {'class':'Move', 'data-hotkey': hk, 'title':'['+hk+'] ' + moveName})
                 .append(
                   $('<div/>', {'class':'key', text: hk}),
                   $('<div/>', {'class':'img'}).append(
                     $('<img/>', {src:'/img/world/typs/' + (val['type'] || 'empty') + '.png', alt:(val['type']||'')})
                   ),
                   $('<div/>', {'class':'MoveInfo'}).append(
-                    $('<div/>', {'class':'Name MoveCategory' + atkc, text: (val['name'] || '')}),
+                    $('<div/>', {'class':'Name MoveCategory' + atkc, text: moveName}),
                     $('<div/>', {'class':'PP'}).text(curPP + '/' + maxPP)
                   )
                 );

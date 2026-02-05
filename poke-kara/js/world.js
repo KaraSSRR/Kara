@@ -6622,7 +6622,18 @@ $('.modalLoad').hide();
             Game.modals.modalLoad(3);
         },
         success: function (response) {
-            response = typeof response === "string" ? JSON.parse(response) : response;
+            if (typeof response === "string") {
+                try {
+                    response = JSON.parse(response);
+                } catch (e) {
+                    response = { error: 1, text: "Ошибка загрузки списка кланов." };
+                }
+            }
+            if (response && response.error) {
+                Game.modals.modalLoad(0);
+                $('.Modal').html('<div style="padding:14px;color:#b91c1c;"><b>Ошибка:</b> ' + (response.text || 'Не удалось загрузить кланы.') + '</div>');
+                return;
+            }
 
             // Удаляем предыдущие блоки, если есть
             $('.Clans').remove();
@@ -8882,6 +8893,13 @@ trenercard: {
         }).on('error', function(){ this.src='/img/pokemons/pokedex/000.png'; }).appendTo(left);
 
         var trainerTera = response.trainerPokemonTeraType || response.trainer_pokemon_tera_type || '';
+        if (trainerTera !== '' && /^[0-9]+$/.test(String(trainerTera))) {
+          var teraMap = {
+            1:'normal',2:'fire',3:'water',4:'electric',5:'grass',6:'ice',7:'fighting',8:'poison',9:'ground',10:'flying',
+            11:'psychic',12:'bug',13:'rock',14:'ghost',15:'dragon',16:'dark',17:'steel',18:'fairy',19:'stellar'
+          };
+          trainerTera = teraMap[parseInt(trainerTera, 10)] || '';
+        }
         if (trainerTera) {
           $('<div/>', {
             class: 'trainercard-tera-badge',

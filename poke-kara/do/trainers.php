@@ -1227,6 +1227,30 @@ case 'trainercard': {
                     $teraRow = $stmtTera->get_result()->fetch_assoc();
                     $stmtTera->close();
                     $trainerPokemonTeraType = isset($teraRow['tera_type']) ? (string)$teraRow['tera_type'] : '';
+                    if ($trainerPokemonTeraType !== '' && ctype_digit($trainerPokemonTeraType)) {
+                        $teraMap = [
+                            1 => 'normal',
+                            2 => 'fire',
+                            3 => 'water',
+                            4 => 'electric',
+                            5 => 'grass',
+                            6 => 'ice',
+                            7 => 'fighting',
+                            8 => 'poison',
+                            9 => 'ground',
+                            10 => 'flying',
+                            11 => 'psychic',
+                            12 => 'bug',
+                            13 => 'rock',
+                            14 => 'ghost',
+                            15 => 'dragon',
+                            16 => 'dark',
+                            17 => 'steel',
+                            18 => 'fairy',
+                            19 => 'stellar'
+                        ];
+                        $trainerPokemonTeraType = $teraMap[(int)$trainerPokemonTeraType] ?? '';
+                    }
                 }
             }
         }
