@@ -10,6 +10,35 @@ var mainLoader = '<img height="80px" src="/img/loader/loader.gif" class="imgLoad
     md5locList = '',
     battleInfoRage = 0;
 
+// --- Clan CSRF (minimal) ---
+window.CLAN_CSRF = window.CLAN_CSRF || '';
+function clanCsrfToken() {
+    return window.CLAN_CSRF || '';
+}
+function clanUpdateCsrf(resp) {
+    if (resp && resp.csrf_token) {
+        window.CLAN_CSRF = resp.csrf_token;
+    }
+}
+if (typeof jQuery !== 'undefined') {
+    $(function(){
+        $.post('/do/clanAction.php', {object:'csrf'}, function(r){ clanUpdateCsrf(r); }, 'json');
+    });
+    $(document).ajaxPrefilter(function(options, originalOptions){
+        if (!options || !options.url) return;
+        if (options.url.indexOf('/do/clanAction.php') === -1) return;
+        if (typeof originalOptions.data === 'string') {
+            if (originalOptions.data.indexOf('csrf_token=') === -1) {
+                originalOptions.data += (originalOptions.data ? '&' : '') + 'csrf_token=' + encodeURIComponent(clanCsrfToken());
+            }
+        } else if (typeof originalOptions.data === 'object' && originalOptions.data) {
+            if (!originalOptions.data.csrf_token) {
+                originalOptions.data.csrf_token = clanCsrfToken();
+            }
+        }
+    });
+}
+
 /* =========================================================
    REALTIME TRANSPORT — sockets removed
    ---------------------------------------------------------
@@ -3964,6 +3993,7 @@ function btnCreateClan() {
     var formData = new FormData();
     formData.append("object", "createClan");
     formData.append("name", clanName);
+    formData.append("csrf_token", clanCsrfToken());
     if (emblemFile) { formData.append("emblem", emblemFile); }
 
     // Отключаем кнопку, чтобы избежать двойной отправки
@@ -6592,7 +6622,18 @@ $('.modalLoad').hide();
             Game.modals.modalLoad(3);
         },
         success: function (response) {
-            response = typeof response === "string" ? JSON.parse(response) : response;
+            if (typeof response === "string") {
+                try {
+                    response = JSON.parse(response);
+                } catch (e) {
+                    response = { error: 1, text: "Ошибка загрузки списка кланов." };
+                }
+            }
+            if (response && response.error) {
+                Game.modals.modalLoad(0);
+                $('.Modal').html('<div style="padding:14px;color:#b91c1c;"><b>Ошибка:</b> ' + (response.text || 'Не удалось загрузить кланы.') + '</div>');
+                return;
+            }
 
             // Удаляем предыдущие блоки, если есть
             $('.Clans').remove();
@@ -7901,6 +7942,27 @@ trenercard: {
   width:190px; height:200px; object-fit:contain; z-index:3;
   filter: drop-shadow(0 12px 20px rgba(15,23,42,.15));
 }
+.trainercard-tera-badge{
+  position:absolute;
+  right:12px;
+  bottom:220px;
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:4px 10px;
+  border-radius:999px;
+  background:rgba(255,255,255,.92);
+  border:1px solid rgba(148,163,184,.5);
+  color:#0f172a;
+  font-size:11px;
+  font-weight:800;
+  z-index:5;
+  box-shadow:0 6px 16px rgba(15,23,42,.12);
+}
+.trainercard-tera-badge img{
+  width:16px;
+  height:16px;
+}
 
 /* ===== ПРАВАЯ КОЛОНКА ===== */
 .tcRight{ 
@@ -8323,6 +8385,7 @@ trenercard: {
   .tcLeft{width:300px; min-width:300px; min-height:480px}
   .big-ava{height:480px}
   .trainercard-pokemon-img{width:150px; height:160px; right:8px; bottom:8px}
+  .trainercard-tera-badge{bottom:176px; right:8px; font-size:10px}
   .tcRight{height:480px}
   .ltRow{gap:10px}
   .lt{padding:14px}
@@ -8338,6 +8401,7 @@ trenercard: {
   .tcLeft{width:100%; min-width:auto; min-height:400px}
   .big-ava{height:400px}
   .trainercard-pokemon-img{width:130px; height:140px; right:6px; bottom:6px}
+  .trainercard-tera-badge{bottom:156px; right:6px; font-size:10px}
   .tcRight{height:auto; min-height:400px}
   .tcRightInner{padding:14px}
   .designTopBtn{right:8px; top:8px; padding:6px 10px; font-size:12px}
@@ -8364,6 +8428,7 @@ trenercard: {
   .tcLeft{border-radius:16px; min-height:320px}
   .big-ava{height:320px; border-radius:12px}
   .trainercard-pokemon-img{width:130px; height:130px; right:4px; bottom:4px}
+  .trainercard-tera-badge{bottom:140px; right:4px; font-size:10px; padding:3px 8px}
   .tcLeft .ClanBadge{width:36px; height:36px; left:8px; top:8px}
   .tcLeft .cornerPaw{width:36px; height:36px; right:8px; top:8px}
   .tcLeft .okTick{width:48px; height:48px; left:16px; bottom:16px}
@@ -8429,6 +8494,7 @@ trenercard: {
   .tcLeft{min-height:280px; border-radius:12px}
   .big-ava{height:280px; border-radius:10px}
   .trainercard-pokemon-img{width:140px; height:140px; right:2px; bottom:8px}
+  .trainercard-tera-badge{bottom:152px; right:4px; font-size:10px; padding:3px 8px}
   .tcRight{border-radius:12px}
   .tcRightInner{padding:8px}
   .tcInfo .nameRow div:first-child{font-size:20px!important}
@@ -8526,6 +8592,7 @@ trenercard: {
   .tcLeft{min-height:240px}
   .big-ava{height:240px}
   .trainercard-pokemon-img{width:75px; height:85px}
+  .trainercard-tera-badge{bottom:100px; right:6px; font-size:9px; padding:2px 6px}
   .ltRow{grid-template-columns:repeat(3,1fr)}
   .sum4{grid-template-columns:repeat(4,1fr)}
   
@@ -8824,6 +8891,22 @@ trenercard: {
           alt:'Покемон',
           'data-basenum': trainerPokemonBasenum
         }).on('error', function(){ this.src='/img/pokemons/pokedex/000.png'; }).appendTo(left);
+
+        var trainerTera = response.trainerPokemonTeraType || response.trainer_pokemon_tera_type || '';
+        if (trainerTera !== '' && /^[0-9]+$/.test(String(trainerTera))) {
+          var teraMap = {
+            1:'normal',2:'fire',3:'water',4:'electric',5:'grass',6:'ice',7:'fighting',8:'poison',9:'ground',10:'flying',
+            11:'psychic',12:'bug',13:'rock',14:'ghost',15:'dragon',16:'dark',17:'steel',18:'fairy',19:'stellar'
+          };
+          trainerTera = teraMap[parseInt(trainerTera, 10)] || '';
+        }
+        if (trainerTera) {
+          $('<div/>', {
+            class: 'trainercard-tera-badge',
+            title: 'Тератип: ' + esc(trainerTera),
+            html: '<img src="/img/world/typs/' + esc(trainerTera) + '.png" alt="' + esc(trainerTera) + '"><span>' + esc(trainerTera) + '</span>'
+          }).appendTo(left);
+        }
 
         if (Number(response.editStatus) === 1) {
           pokemonImg.on('contextmenu', function(e){
@@ -22639,4 +22722,3 @@ window.NewYearTree = window.NewYearTree || (function(){
 
 })();
  /* === UI_PATCH_MODAL_SHELL_V1_END === */
-

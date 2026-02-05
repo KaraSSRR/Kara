@@ -31,6 +31,66 @@ class Battle{
 		return null;
 	}
 
+	private function resolveTeraTypeName($teraType): string {
+		if (is_numeric($teraType)) {
+			$map = [
+				1 => 'normal',
+				2 => 'fire',
+				3 => 'water',
+				4 => 'electric',
+				5 => 'grass',
+				6 => 'ice',
+				7 => 'fighting',
+				8 => 'poison',
+				9 => 'ground',
+				10 => 'flying',
+				11 => 'psychic',
+				12 => 'bug',
+				13 => 'rock',
+				14 => 'ghost',
+				15 => 'dragon',
+				16 => 'dark',
+				17 => 'steel',
+				18 => 'fairy',
+				19 => 'stellar'
+			];
+			return $map[(int)$teraType] ?? 'normal';
+		}
+		$teraType = strtolower((string)$teraType);
+		return ($teraType !== '' ? $teraType : 'normal');
+	}
+
+	private function normalizeTypeList($types): array {
+		if (is_string($types)) {
+			$types = array_filter(array_map('trim', explode(',', $types)));
+		}
+		if (!is_array($types)) {
+			return [];
+		}
+		$normalized = [];
+		foreach ($types as $type) {
+			$name = $this->resolveTeraTypeName($type);
+			if ($name !== '') {
+				$normalized[] = $name;
+			}
+		}
+		return array_values(array_unique($normalized));
+	}
+
+	private function isTeraBlast(array $atkAtk): bool {
+		$name = strtolower((string)($atkAtk['name'] ?? ''));
+		if ($name !== '' && strpos($name, 'tera') !== false && strpos($name, 'blast') !== false) {
+			return true;
+		}
+		if (function_exists('mb_strtolower')) {
+			$nameRu = mb_strtolower((string)($atkAtk['name'] ?? ''));
+			if ($nameRu !== '' && mb_strpos($nameRu, 'тера') !== false) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	private function _getMove($id){
 		$id = (int)$id;
 		if($id <= 0){
@@ -4974,6 +5034,36 @@ if($atkAtk['id'] == 190) {
                 $this->types['psychic']['dark'] = 1;
             }
 
+            // Terastalization / Tera Blast adjustments before type effectiveness
+            $teraActive = (!empty($atk->is_terastallized) || !empty($atk->tera_active));
+            $teraTypeName = $this->resolveTeraTypeName($atk->tera_type ?? '');
+            $preTeraTypes = $this->normalizeTypeList($atk->pre_tera_types ?? []);
+            if ($teraActive && empty($preTeraTypes)) {
+                $preTeraTypes = $this->normalizeTypeList([
+                    $this->resolveTeraTypeName($atk->tera_orig_type ?? $atk->_getTypeA()),
+                    $this->resolveTeraTypeName($atk->tera_orig_type_two ?? $atk->_getTypeB())
+                ]);
+            }
+
+            if ($this->isTeraBlast($atkAtk)) {
+                if ($teraActive) {
+                    $atkAtk['type'] = $teraTypeName;
+                    $atkStatAtk = $atk->_getStatAtk();
+                    $atkStatSatk = $atk->_getStatSAtk();
+                    $atkAtk['category'] = ($atkStatAtk >= $atkStatSatk ? 'physical' : 'special');
+                    if ($teraTypeName === 'stellar') {
+                        $atkAtk['power'] = 100;
+                    }
+                } else {
+                    $atkAtk['type'] = 'normal';
+                }
+            }
+
+            if ($teraActive && $teraTypeName !== '' && $atkAtk['type'] === $teraTypeName && (int)$atkAtk['power'] > 0 && (int)$atkAtk['power'] < 60) {
+                $atkAtk['power'] = 60;
+                $this->log[] = 'Мощность атаки повышена до 60 благодаря тератипу.';
+            }
+
             // Типоэффективность
             $this->settings['types'] = 1;
             $this->settings['types'] *= (isset($this->types[$atkAtk['type']], $this->types[$atkAtk['type']][$def->_getTypeA()]) ? $this->types[$atkAtk['type']][$def->_getTypeA()] : 1);
@@ -4988,22 +5078,45 @@ if($atkAtk['id'] == 190) {
             if($moveType !== '' && $moveType !== 'NULL'){
                 $atkTypeA = (string)$atk->_getTypeA();
                 $atkTypeB = (string)$atk->_getTypeB();
+                $isStellar = ($teraActive && $teraTypeName === 'stellar');
 
-                if(!empty($atk->tera_active) && !empty($atk->tera_type)){
-                    $origA = (!empty($atk->tera_orig_type) ? (string)$atk->tera_orig_type : $atkTypeA);
-                    $origB = (!empty($atk->tera_orig_type_two) ? (string)$atk->tera_orig_type_two : $atkTypeB);
-                    $teraType = (string)$atk->tera_type;
-
-                    if($moveType === $teraType){
-                        $this->settings['stab'] = (($teraType === $origA) || ($origB !== '' && $teraType === $origB)) ? 2.0 : 1.5;
-                    }elseif($moveType === $origA || ($origB !== '' && $moveType === $origB)){
-                        $this->settings['stab'] = 1.5;
+                if($teraActive && !$isStellar && $teraTypeName !== ''){
+                    if($moveType === $teraTypeName){
+                        $this->settings['stab'] = (in_array($teraTypeName, $preTeraTypes, true) ? 2.0 : 1.5);
+                    }
+                    if(in_array($moveType, $preTeraTypes, true)){
+                        $this->settings['stab'] = max($this->settings['stab'], 1.5);
                     }
                 }else{
                     if($moveType === $atkTypeA || ($atkTypeB !== '' && $moveType === $atkTypeB)){
                         $this->settings['stab'] = 1.5;
                     }
                 }
+            }
+
+            $stellarBonus = 1.0;
+            if ($teraActive && $teraTypeName === 'stellar' && $moveType !== '' && $moveType !== 'NULL') {
+                $used = $this->normalizeTypeList($atk->stellar_used_types ?? []);
+                if (!in_array($moveType, $used, true)) {
+                    if (in_array($moveType, $preTeraTypes, true)) {
+                        $stellarBonus = 2.0;
+                    } else {
+                        $stellarBonus = (4915 / 4096);
+                    }
+                    $used[] = $moveType;
+                    $atk->stellar_used_types = array_values(array_unique($used));
+                }
+            }
+            $this->settings['stellar_bonus'] = $stellarBonus;
+
+            // Adaptability (id=1): повышает STAB, включая Terastalization
+            if ($this->settings['stab'] > 1 && $atk->ability == 1) {
+                if ($this->settings['stab'] >= 2) {
+                    $this->settings['stab'] = 2.25;
+                } else {
+                    $this->settings['stab'] = 2.0;
+                }
+                $this->log[] = '<div class="Ability" onclick="issetAll('.$atk->ability.',\'ability\')">'.$this->_abilNameRus($atk->ability).'</div> усиливает STAB-эффект.';
             }
 
             // Типовые буст-итемы
@@ -5049,6 +5162,10 @@ if($atkAtk['id'] == 190) {
               $this->settings['otherDmg'] = 1.3;
             }else{
               $this->settings['otherDmg'] = 1;
+            }
+
+            if (!empty($this->settings['stellar_bonus'])) {
+              $this->settings['otherDmg'] *= $this->settings['stellar_bonus'];
             }
 
             // Базовые боевые статы (с учётом модификаторов по вашим методам)

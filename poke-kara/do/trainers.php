@@ -1195,6 +1195,16 @@ case 'trainercard': {
         $stmtClan->execute();
         $clanUser = $stmtClan->get_result()->fetch_assoc();
         $stmtClan->close();
+        $clanFaction = null;
+        if ($clanUser && isset($clanUser['clan_id'])) {
+            $stmtFaction = $mysqli->prepare("SELECT cf.id, cf.code, cf.name, cf.badge_color FROM clans c LEFT JOIN clan_factions cf ON cf.id=c.faction_id WHERE c.id=? LIMIT 1");
+            if ($stmtFaction) {
+                $stmtFaction->bind_param('i', $clanUser['clan_id']);
+                $stmtFaction->execute();
+                $clanFaction = $stmtFaction->get_result()->fetch_assoc();
+                $stmtFaction->close();
+            }
+        }
 
         /* ===== LVL PROGRESS ===== */
         $expLvl   = (int)$users['exp_lvl'];
@@ -1207,6 +1217,43 @@ case 'trainercard': {
                 ? str_pad((int)$users['trainer_pokemon'], 3, "0", STR_PAD_LEFT)
                 : "000"
         );
+        $trainerPokemonTeraType = '';
+        if (!empty($users['trainer_pokemon'])) {
+            $trainerPokemonBasenumInt = (int)$users['trainer_pokemon'];
+            if ($trainerPokemonBasenumInt > 0) {
+                if ($stmtTera = $mysqli->prepare("SELECT tera_type FROM user_pokemons WHERE user_id = ? AND basenum = ? ORDER BY active DESC, id DESC LIMIT 1")) {
+                    $stmtTera->bind_param('ii', $uid, $trainerPokemonBasenumInt);
+                    $stmtTera->execute();
+                    $teraRow = $stmtTera->get_result()->fetch_assoc();
+                    $stmtTera->close();
+                    $trainerPokemonTeraType = isset($teraRow['tera_type']) ? (string)$teraRow['tera_type'] : '';
+                    if ($trainerPokemonTeraType !== '' && ctype_digit($trainerPokemonTeraType)) {
+                        $teraMap = [
+                            1 => 'normal',
+                            2 => 'fire',
+                            3 => 'water',
+                            4 => 'electric',
+                            5 => 'grass',
+                            6 => 'ice',
+                            7 => 'fighting',
+                            8 => 'poison',
+                            9 => 'ground',
+                            10 => 'flying',
+                            11 => 'psychic',
+                            12 => 'bug',
+                            13 => 'rock',
+                            14 => 'ghost',
+                            15 => 'dragon',
+                            16 => 'dark',
+                            17 => 'steel',
+                            18 => 'fairy',
+                            19 => 'stellar'
+                        ];
+                        $trainerPokemonTeraType = $teraMap[(int)$trainerPokemonTeraType] ?? '';
+                    }
+                }
+            }
+        }
 
         /* ===== HOURS & WINS% ===== */
         // Функция для получения часов пользователя
@@ -1286,6 +1333,10 @@ case 'trainercard': {
             'id' => $uid,
             'clanUserCheck' => ($clanUser ? 1 : 0),
             'clanUser' => $clanUser['clan_id'] ?? null,
+            'clanFaction' => $clanFaction ? $clanFaction : null,
+            'clanFactionCode' => $clanFaction['code'] ?? '',
+            'clanFactionName' => $clanFaction['name'] ?? '',
+            'clanFactionColor' => $clanFaction['badge_color'] ?? '',
             'ballList' => $ballList,
 
             // достижения
@@ -1358,6 +1409,7 @@ case 'trainercard': {
             'hatName' => (isset($cloth['hat']) && function_exists('getHatTitle')) ? getHatTitle($cloth['hat']) : ($cloth['hat'] ?? null),
 
             'trainerPokemonBasenum' => $trainerPokemonBasenum,
+            'trainerPokemonTeraType' => $trainerPokemonTeraType,
 
             // ВРЕМЯ В ИГРЕ — сразу несколько ключей для совместимости
             'hours'               => $hours,                // целое количество часов

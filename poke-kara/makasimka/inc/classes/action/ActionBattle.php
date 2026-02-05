@@ -221,6 +221,13 @@ class ActionBattle {
 
     private function _defaultAtk($atkID = 0, $attackNum = 0){
         // «Борьба» (Struggle) — безопасный дефолт, если нет нормальных атак.
+        $teraType = $this->resolveTeraTypeName($targetID['tera_type'] ?? '');
+        $teraActive = (int)($targetID['tera_active'] ?? 0);
+        if (!$my) {
+            $teraType = '';
+            $teraActive = 0;
+        }
+
         return [
             'id' => (int)$atkID,
             'name' => 'Борьба',
@@ -1267,113 +1274,162 @@ private function goRound() {
 if (!empty($this->userData['tera']) && empty($this->userData['tera_used'])) {
 
     $pid = isset($u['id']) ? (int)$u['id'] : 0;
-    $teraType = (!empty($u['tera_type']) ? (string)$u['tera_type'] : '');
+    $teraTypeName = $this->resolveTeraTypeName($u['tera_type'] ?? '');
+    $isStellar = ($teraTypeName === 'stellar');
 
     // Если у активного покемона нет тератипа — игнорируем запрос (не тратим tera_used)
-    if (empty($teraType)) {
+    if (empty($teraTypeName)) {
         $this->userData['tera'] = 0;
     } else {
         $this->userData['tera_used'] = 1;
         $this->userData['tera'] = 0;
 
+        $preTypes = array_values(array_filter([
+            $this->resolveTeraTypeName($u['base_type'] ?? 'normal'),
+            $this->resolveTeraTypeName($u['base_type_two'] ?? '')
+        ]));
+
         // флаги
-        $u['tera_type'] = $teraType;
         $u['tera_active'] = 1;
+        $u['is_terastallized'] = 1;
+        $u['pre_tera_types'] = $preTypes;
+        $u['stellar_used_types'] = [];
+        $this->clearTeraTypeStatuses($u);
 
-        // сохранить исходные типы (для STAB/логики)
-        if (!isset($u['tera_orig_type']))     $u['tera_orig_type']     = ($u['base_type'] ?? '');
-        if (!isset($u['tera_orig_type_two'])) $u['tera_orig_type_two'] = ($u['base_type_two'] ?? '');
-
-        // подмена типа в бою (как в Pokémon Showdown): защита/отображение идут по tera_type
-        $u['base_type'] = $teraType;
-        $u['base_type_two'] = '';
+        if (!$isStellar) {
+            $u['base_type'] = $teraTypeName;
+            $u['base_type_two'] = '';
+        }
 
         // синхронизация с массивами стороны (важно: userTarget не всегда ссылка на pokeLIst)
         if ($pid > 0) {
             $k = 'p' . $pid;
 
             if (isset($this->userPokes[$k]) && is_array($this->userPokes[$k])) {
-                $this->userPokes[$k]['tera_type'] = $teraType;
                 $this->userPokes[$k]['tera_active'] = 1;
-                if (!isset($this->userPokes[$k]['tera_orig_type']))     $this->userPokes[$k]['tera_orig_type']     = ($this->userPokes[$k]['base_type'] ?? '');
-                if (!isset($this->userPokes[$k]['tera_orig_type_two'])) $this->userPokes[$k]['tera_orig_type_two'] = ($this->userPokes[$k]['base_type_two'] ?? '');
-                $this->userPokes[$k]['base_type'] = $teraType;
-                $this->userPokes[$k]['base_type_two'] = '';
+                $this->userPokes[$k]['is_terastallized'] = 1;
+                $this->userPokes[$k]['pre_tera_types'] = $preTypes;
+                $this->userPokes[$k]['stellar_used_types'] = [];
+                $this->clearTeraTypeStatuses($this->userPokes[$k]);
+                if (!$isStellar) {
+                    $this->userPokes[$k]['base_type'] = $teraTypeName;
+                    $this->userPokes[$k]['base_type_two'] = '';
+                }
             }
 
             if (isset($this->userData['pokeLIst'][$k]) && is_array($this->userData['pokeLIst'][$k])) {
-                $this->userData['pokeLIst'][$k]['tera_type'] = $teraType;
                 $this->userData['pokeLIst'][$k]['tera_active'] = 1;
-                if (!isset($this->userData['pokeLIst'][$k]['tera_orig_type']))     $this->userData['pokeLIst'][$k]['tera_orig_type']     = ($this->userData['pokeLIst'][$k]['base_type'] ?? '');
-                if (!isset($this->userData['pokeLIst'][$k]['tera_orig_type_two'])) $this->userData['pokeLIst'][$k]['tera_orig_type_two'] = ($this->userData['pokeLIst'][$k]['base_type_two'] ?? '');
-                $this->userData['pokeLIst'][$k]['base_type'] = $teraType;
-                $this->userData['pokeLIst'][$k]['base_type_two'] = '';
+                $this->userData['pokeLIst'][$k]['is_terastallized'] = 1;
+                $this->userData['pokeLIst'][$k]['pre_tera_types'] = $preTypes;
+                $this->userData['pokeLIst'][$k]['stellar_used_types'] = [];
+                $this->clearTeraTypeStatuses($this->userData['pokeLIst'][$k]);
+                if (!$isStellar) {
+                    $this->userData['pokeLIst'][$k]['base_type'] = $teraTypeName;
+                    $this->userData['pokeLIst'][$k]['base_type_two'] = '';
+                }
             }
             if (isset($this->userData['pokeList'][$k]) && is_array($this->userData['pokeList'][$k])) {
-                $this->userData['pokeList'][$k]['tera_type'] = $teraType;
                 $this->userData['pokeList'][$k]['tera_active'] = 1;
-                if (!isset($this->userData['pokeList'][$k]['tera_orig_type']))     $this->userData['pokeList'][$k]['tera_orig_type']     = ($this->userData['pokeList'][$k]['base_type'] ?? '');
-                if (!isset($this->userData['pokeList'][$k]['tera_orig_type_two'])) $this->userData['pokeList'][$k]['tera_orig_type_two'] = ($this->userData['pokeList'][$k]['base_type_two'] ?? '');
-                $this->userData['pokeList'][$k]['base_type'] = $teraType;
-                $this->userData['pokeList'][$k]['base_type_two'] = '';
+                $this->userData['pokeList'][$k]['is_terastallized'] = 1;
+                $this->userData['pokeList'][$k]['pre_tera_types'] = $preTypes;
+                $this->userData['pokeList'][$k]['stellar_used_types'] = [];
+                $this->clearTeraTypeStatuses($this->userData['pokeList'][$k]);
+                if (!$isStellar) {
+                    $this->userData['pokeList'][$k]['base_type'] = $teraTypeName;
+                    $this->userData['pokeList'][$k]['base_type_two'] = '';
+                }
             }
         }
 
-        $teraMsgUser = 'Терастализация! <img src="/img/world/typs/'.$teraType.'.png" style="width:18px;vertical-align:middle;"> Покемон стал <b>'.$teraType.'</b>-типа.';
+        $teraMsgUser = 'Терастализация! <img src="/img/world/typs/'.$teraTypeName.'.png" style="width:18px;vertical-align:middle;"> Покемон стал <b>'.$teraTypeName.'</b>-типа.';
     }
 }
 
-// --- TERA: PvP (если соперник тоже отправил tera=1) ---
-if ($this->_isPVP() && !empty($this->enemyData['tera']) && empty($this->enemyData['tera_used'])) {
+// --- TERA: PvE авто-тера для врага ---
+if (!$this->_isPVP() && empty($this->enemyData['tera_used'])) {
+    if (empty($e['is_terastallized']) && empty($this->enemyData['tera']) && !empty($e['tera_type'])) {
+        $teraChance = 15;
+        if (!empty($e['sparka'])) {
+            $teraChance += min(35, (int)$e['sparka']);
+        }
+        if (!empty($e['hp_max']) && !empty($e['hp']) && $e['hp'] <= ($e['hp_max'] / 2)) {
+            $teraChance += 20;
+        }
+        if (mt_rand(1, 100) <= min(90, $teraChance)) {
+            $this->enemyData['tera'] = 1;
+        }
+    }
+}
+
+// --- TERA: соперник (PvP или PvE по авто-решению) ---
+if (!empty($this->enemyData['tera']) && empty($this->enemyData['tera_used'])) {
 
     $epid = isset($e['id']) ? (int)$e['id'] : 0;
-    $teraTypeE = (!empty($e['tera_type']) ? (string)$e['tera_type'] : '');
+    $teraTypeName = $this->resolveTeraTypeName($e['tera_type'] ?? '');
+    $isStellar = ($teraTypeName === 'stellar');
 
     // Если у активного покемона соперника нет тератипа — игнорируем запрос (не тратим tera_used)
-    if (empty($teraTypeE)) {
+    if (empty($teraTypeName)) {
         $this->enemyData['tera'] = 0;
     } else {
         $this->enemyData['tera_used'] = 1;
         $this->enemyData['tera'] = 0;
 
-        $e['tera_type'] = $teraTypeE;
+        $preTypes = array_values(array_filter([
+            $this->resolveTeraTypeName($e['base_type'] ?? 'normal'),
+            $this->resolveTeraTypeName($e['base_type_two'] ?? '')
+        ]));
+
         $e['tera_active'] = 1;
-        if (!isset($e['tera_orig_type']))     $e['tera_orig_type']     = ($e['base_type'] ?? '');
-        if (!isset($e['tera_orig_type_two'])) $e['tera_orig_type_two'] = ($e['base_type_two'] ?? '');
-        $e['base_type'] = $teraTypeE;
-        $e['base_type_two'] = '';
+        $e['is_terastallized'] = 1;
+        $e['pre_tera_types'] = $preTypes;
+        $e['stellar_used_types'] = [];
+        $this->clearTeraTypeStatuses($e);
+        if (!$isStellar) {
+            $e['base_type'] = $teraTypeName;
+            $e['base_type_two'] = '';
+        }
 
         if ($epid > 0) {
             $ek = 'p' . $epid;
 
             if (isset($this->enemyPokes[$ek]) && is_array($this->enemyPokes[$ek])) {
-                $this->enemyPokes[$ek]['tera_type'] = $teraTypeE;
                 $this->enemyPokes[$ek]['tera_active'] = 1;
-                if (!isset($this->enemyPokes[$ek]['tera_orig_type']))     $this->enemyPokes[$ek]['tera_orig_type']     = ($this->enemyPokes[$ek]['base_type'] ?? '');
-                if (!isset($this->enemyPokes[$ek]['tera_orig_type_two'])) $this->enemyPokes[$ek]['tera_orig_type_two'] = ($this->enemyPokes[$ek]['base_type_two'] ?? '');
-                $this->enemyPokes[$ek]['base_type'] = $teraTypeE;
-                $this->enemyPokes[$ek]['base_type_two'] = '';
+                $this->enemyPokes[$ek]['is_terastallized'] = 1;
+                $this->enemyPokes[$ek]['pre_tera_types'] = $preTypes;
+                $this->enemyPokes[$ek]['stellar_used_types'] = [];
+                $this->clearTeraTypeStatuses($this->enemyPokes[$ek]);
+                if (!$isStellar) {
+                    $this->enemyPokes[$ek]['base_type'] = $teraTypeName;
+                    $this->enemyPokes[$ek]['base_type_two'] = '';
+                }
             }
 
             if (isset($this->enemyData['pokeLIst'][$ek]) && is_array($this->enemyData['pokeLIst'][$ek])) {
-                $this->enemyData['pokeLIst'][$ek]['tera_type'] = $teraTypeE;
                 $this->enemyData['pokeLIst'][$ek]['tera_active'] = 1;
-                if (!isset($this->enemyData['pokeLIst'][$ek]['tera_orig_type']))     $this->enemyData['pokeLIst'][$ek]['tera_orig_type']     = ($this->enemyData['pokeLIst'][$ek]['base_type'] ?? '');
-                if (!isset($this->enemyData['pokeLIst'][$ek]['tera_orig_type_two'])) $this->enemyData['pokeLIst'][$ek]['tera_orig_type_two'] = ($this->enemyData['pokeLIst'][$ek]['base_type_two'] ?? '');
-                $this->enemyData['pokeLIst'][$ek]['base_type'] = $teraTypeE;
-                $this->enemyData['pokeLIst'][$ek]['base_type_two'] = '';
+                $this->enemyData['pokeLIst'][$ek]['is_terastallized'] = 1;
+                $this->enemyData['pokeLIst'][$ek]['pre_tera_types'] = $preTypes;
+                $this->enemyData['pokeLIst'][$ek]['stellar_used_types'] = [];
+                $this->clearTeraTypeStatuses($this->enemyData['pokeLIst'][$ek]);
+                if (!$isStellar) {
+                    $this->enemyData['pokeLIst'][$ek]['base_type'] = $teraTypeName;
+                    $this->enemyData['pokeLIst'][$ek]['base_type_two'] = '';
+                }
             }
             if (isset($this->enemyData['pokeList'][$ek]) && is_array($this->enemyData['pokeList'][$ek])) {
-                $this->enemyData['pokeList'][$ek]['tera_type'] = $teraTypeE;
                 $this->enemyData['pokeList'][$ek]['tera_active'] = 1;
-                if (!isset($this->enemyData['pokeList'][$ek]['tera_orig_type']))     $this->enemyData['pokeList'][$ek]['tera_orig_type']     = ($this->enemyData['pokeList'][$ek]['base_type'] ?? '');
-                if (!isset($this->enemyData['pokeList'][$ek]['tera_orig_type_two'])) $this->enemyData['pokeList'][$ek]['tera_orig_type_two'] = ($this->enemyData['pokeList'][$ek]['base_type_two'] ?? '');
-                $this->enemyData['pokeList'][$ek]['base_type'] = $teraTypeE;
-                $this->enemyData['pokeList'][$ek]['base_type_two'] = '';
+                $this->enemyData['pokeList'][$ek]['is_terastallized'] = 1;
+                $this->enemyData['pokeList'][$ek]['pre_tera_types'] = $preTypes;
+                $this->enemyData['pokeList'][$ek]['stellar_used_types'] = [];
+                $this->clearTeraTypeStatuses($this->enemyData['pokeList'][$ek]);
+                if (!$isStellar) {
+                    $this->enemyData['pokeList'][$ek]['base_type'] = $teraTypeName;
+                    $this->enemyData['pokeList'][$ek]['base_type_two'] = '';
+                }
             }
         }
 
-        $teraMsgEnemy = 'Соперник терасталлизовался! <img src="/img/world/typs/'.$teraTypeE.'.png" style="width:18px;vertical-align:middle;">';
+        $teraMsgEnemy = 'Соперник терасталлизовался!';
     }
 }
 
@@ -1973,8 +2029,8 @@ private function viewInfoTarget($targetID, $my = false) {
             'lvl'           => $lvl,
             'type2'         => ($typeSprite == 'normal' ? '' : $typeSprite),
             'type'          => $typeSprite,
-            'tera_type'     => (string)($targetID['tera_type'] ?? ''),
-            'tera_active'   => (int)($targetID['tera_active'] ?? 0),
+            'tera_type'     => (string)$teraType,
+            'tera_active'   => $teraActive,
             'mega_can'      => (int)$mega_can,
             'mega_active'   => (int)$mega_active,
             'sex'           => $targetID['gender'] ?? 'Мальчик',
@@ -2237,6 +2293,32 @@ public function lose($user_lose_id, $lose_type = 'OTHER', $last_atk = false) {
         $winner_pokes =& $this->enemyPokes;
     } else {
         $winner_pokes =& $this->userPokes;
+    }
+
+    // --- Tera resonance: победа над теро-диким усиливает шанс следующих встреч ---
+    if (!$this->_isPVP() && !$loserIsMe) {
+        $enemyHadTeraWild = false;
+        foreach ($this->enemyPokes as $poke) {
+            if (!empty($poke['tera_wild'])) {
+                $enemyHadTeraWild = true;
+                break;
+            }
+        }
+        if ($enemyHadTeraWild) {
+            $teraConfig = Work::$sql->query('SELECT * FROM `system` LIMIT 1')->fetch_assoc();
+            $bonus = (int)($teraConfig['tera_resonance_bonus'] ?? 0);
+            $duration = (int)($teraConfig['tera_resonance_duration'] ?? 0);
+            $cap = (int)($teraConfig['tera_resonance_cap'] ?? 0);
+            if ($bonus > 0 && $duration > 0) {
+                $currentRemaining = (int)($_SESSION['tera_resonance_remaining'] ?? 0);
+                $newRemaining = $currentRemaining + $duration;
+                if ($cap > 0) {
+                    $newRemaining = min($cap, $newRemaining);
+                }
+                $_SESSION['tera_resonance_remaining'] = $newRemaining;
+                $_SESSION['tera_resonance_bonus'] = $bonus;
+            }
+        }
     }
 
     // Обновление опыта проигравшей стороны (PvP) — ОТКЛЮЧЕНО ПОЛНОСТЬЮ
@@ -3363,12 +3445,87 @@ public function _setTarget($userID, $target) {
             }
             $this->userData['target'] = intval($target['id']);
             $this->userTarget = $target;
+            $this->resetTeraSnapshotOnSwitch('user', $this->userData['target']);
         } else {
             if (isset($this->enemyData['target'])) {
                 $this->enemyData['prevTarget'] = $this->enemyData['target'];
             }
             $this->enemyData['target'] = intval($target['id']);
             $this->enemyTarget = $target;
+            $this->resetTeraSnapshotOnSwitch('enemy', $this->enemyData['target']);
+        }
+    }
+}
+
+private function resetTeraSnapshotOnSwitch(string $side, int $targetId): void {
+    if ($targetId <= 0) {
+        return;
+    }
+    $pokeKey = 'p' . $targetId;
+    $list = ($side === 'user') ? $this->userPokes : $this->enemyPokes;
+    if (!isset($list[$pokeKey]) || !is_array($list[$pokeKey])) {
+        return;
+    }
+    if (!empty($list[$pokeKey]['is_terastallized'])) {
+        $preTypes = array_values(array_filter([
+            $this->resolveTeraTypeName($list[$pokeKey]['base_type'] ?? 'normal'),
+            $this->resolveTeraTypeName($list[$pokeKey]['base_type_two'] ?? '')
+        ]));
+        $list[$pokeKey]['pre_tera_types'] = $preTypes;
+        $list[$pokeKey]['tera_active'] = 1;
+    }
+    if ($side === 'user') {
+        $this->userPokes[$pokeKey] = $list[$pokeKey];
+        $this->userTarget = $list[$pokeKey];
+    } else {
+        $this->enemyPokes[$pokeKey] = $list[$pokeKey];
+        $this->enemyTarget = $list[$pokeKey];
+    }
+}
+
+private function resolveTeraTypeName($teraType): string {
+    if (is_numeric($teraType)) {
+        $map = [
+            1 => 'normal',
+            2 => 'fire',
+            3 => 'water',
+            4 => 'electric',
+            5 => 'grass',
+            6 => 'ice',
+            7 => 'fighting',
+            8 => 'poison',
+            9 => 'ground',
+            10 => 'flying',
+            11 => 'psychic',
+            12 => 'bug',
+            13 => 'rock',
+            14 => 'ghost',
+            15 => 'dragon',
+            16 => 'dark',
+            17 => 'steel',
+            18 => 'fairy',
+            19 => 'stellar'
+        ];
+        return $map[(int)$teraType] ?? 'normal';
+    }
+    $teraType = strtolower((string)$teraType);
+    return ($teraType !== '' ? $teraType : 'normal');
+}
+
+private function clearTeraTypeStatuses(array &$poke): void {
+    if (empty($poke['status_list']) || !is_array($poke['status_list'])) {
+        return;
+    }
+    $blocked = [
+        'soak',
+        'trickortreat',
+        'plant',
+        'reflecttype',
+        'typechange'
+    ];
+    foreach ($blocked as $status) {
+        if (isset($poke['status_list'][$status])) {
+            unset($poke['status_list'][$status]);
         }
     }
 }
