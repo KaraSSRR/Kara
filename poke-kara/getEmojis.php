@@ -1,8 +1,8 @@
 <?php
-$pack = isset($_GET['pack']) ? $_GET['pack'] : '';
-$dir = __DIR__ . "/img/em/$pack";
+$pack = isset($_GET['pack']) ? preg_replace('/[^a-z0-9]/i', '', $_GET['pack']) : '';
+$dir = $pack !== '' ? __DIR__ . "/img/em/$pack" : '';
 
-if (!$pack || !is_dir($dir)) {
+if (!$pack || $dir === '' || !is_dir($dir)) {
     echo json_encode(["emojis" => []]);
     exit;
 }

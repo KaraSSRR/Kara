@@ -1614,8 +1614,9 @@ case 'trainers':
 
 
  case 'clans':
-    // Получаем список всех кланов, сортированных по рейтингу (убыв.)
-    $clans = $mysqli->query("SELECT * FROM `base_clans` ORDER BY `rating` DESC");
+    $response['error'] = 1;
+    $response['html'] = 'Клановые окна перенесены в /do/clanAction.php. Используйте новый эндпойнт.';
+    break;
 
     $i = 1;
     $clansList = [];
@@ -4487,6 +4488,9 @@ case 'shop':
     break;
 
 case 'clanCard':
+    $response['error'] = 1;
+    $response['html'] = 'Клановая карточка перенесена в /do/clanAction.php. Используйте новый эндпойнт.';
+    break;
     // Получаем ID клана
     $clanID = isset($_POST['id']) ? clearInt($_POST['id']) : 0;
     if ($clanID < 1) {
@@ -4600,6 +4604,9 @@ case 'clanCard':
     break;
 
 case 'clanCardControl':
+    $response['error'] = 1;
+    $response['html'] = 'Управление кланом перенесено в /do/clanAction.php. Используйте новый эндпойнт.';
+    break;
     // Получаем ID клана и информацию о пользователе
     $clanIDParam = clearInt($_POST['id'] ?? 0);
     $userIdSession = (int)($_SESSION['id'] ?? 0);

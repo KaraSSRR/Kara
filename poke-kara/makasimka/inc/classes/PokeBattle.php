@@ -433,9 +433,9 @@ class PokeBattle{
     }
     public function _getTypeA(){
         // PS PATCH: Soak меняет тип цели на Water до ухода/смерти
-if ($this->_checkStatus('soak')) {
-    return 'water';
-}
+        if (empty($this->pokeInfo['is_terastallized']) && $this->_checkStatus('soak')) {
+            return 'water';
+        }
 
         $form = $this->_getFormRowNew();
         if(!empty($form) && isset($form['type'])){
@@ -445,9 +445,9 @@ if ($this->_checkStatus('soak')) {
     }
     public function _getTypeB(){
         // PS PATCH: при Soak второй тип сбрасываем
-if ($this->_checkStatus('soak')) {
-    return '';
-}
+        if (empty($this->pokeInfo['is_terastallized']) && $this->_checkStatus('soak')) {
+            return '';
+        }
 
         $form = $this->_getFormRowNew();
         if(!empty($form) && isset($form['type_two'])){
@@ -931,6 +931,13 @@ if (isset($this->pokeInfo['ability']) && $this->pokeInfo['ability'] == 144) {
             // Если в данных уже лежит старый ключ toxic2 — используем его, чтобы не дублировать статус
             if($statusName === 'poison' && isset($this->pokeInfo['status_list']) && isset($this->pokeInfo['status_list']['toxic2']) && !isset($this->pokeInfo['status_list']['poison'])){
                 $statusName = 'toxic2';
+            }
+
+            if (!empty($this->pokeInfo['is_terastallized'])) {
+                $blocked = ['soak', 'trickortreat', 'plant', 'reflecttype', 'typechange'];
+                if (in_array($statusName, $blocked, true)) {
+                    return false;
+                }
             }
 
 

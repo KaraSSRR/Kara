@@ -616,7 +616,7 @@ public static function generateAbility($num){
       return (isset($Location[$val[2]]) ? $Location[$val[2]] : null);
     }
 
-    public static function _userInfoBattle($userID, $type = 'pve', array $option = []){
+public static function _userInfoBattle($userID, $type = 'pve', array $option = []){
 
         if(Work::$sql && is_numeric($userID) && $userID >= 0){
 
@@ -811,6 +811,19 @@ public static function generateAbility($num){
                               }
                             }
                             
+                            $teraTypeId = (!empty($value['tera_type'])
+                                ? self::_resolveTeraTypeId($value['tera_type'])
+                                : self::_generateWildTeraType($baseInfo['base_type'] ?? 'normal', $baseInfo['base_type_two'] ?? '', $value['sparka'] ?? 0));
+                            $teraTypeName = self::_resolveTeraTypeName($teraTypeId);
+                            $isTerastallized = !empty($value['is_terastallized']);
+                            $preTeraTypes = (isset($value['pre_tera_types']) ? self::_normalizeTypeList($value['pre_tera_types']) : []);
+                            if ($isTerastallized && empty($preTeraTypes)) {
+                                $preTeraTypes = array_values(array_filter([
+                                    self::_resolveTeraTypeName($baseInfo['base_type'] ?? 'normal'),
+                                    self::_resolveTeraTypeName($baseInfo['base_type_two'] ?? '')
+                                ]));
+                            }
+
                             $pokeUserInfo['p'.$id] = array_merge($baseInfo, [
                                 'id'=>$id,
                                 'user_id'=>$userID,
@@ -839,7 +852,7 @@ public static function generateAbility($num){
                                 'master'=>0,
                                 'item_id'=>($a_item_id ?? (isset($value['item_id']) ? intval($value['item_id']) : 0)),
                                 'startGame'=>0,
-                                'sparka'=>0,
+                                'sparka'=>(int)($value['sparka'] ?? 0),
                                 'trn'=>0,
                                 'trn_stat'=>0,
                                 'happy'=>15,
@@ -855,8 +868,13 @@ public static function generateAbility($num){
                                 'catch'=>$value['catch'],
                                 'pp_my'=>'2000,2000,2000,2000',
                                 'disable_my'=>'0,0,0,0',
-                                'tera_type'   => (!empty($value['tera_type']) ? $value['tera_type'] : ($baseInfo['base_type'] ?? 'normal')),
-'tera_active' => 0,
+                                'tera_type'        => $teraTypeId,
+                                'tera_type_name'   => $teraTypeName,
+                                'tera_type_source' => ($value['tera_type_source'] ?? 'wild'),
+                                'tera_active'      => ($isTerastallized ? 1 : 0),
+                                'is_terastallized' => ($isTerastallized ? 1 : 0),
+                                'pre_tera_types'   => $preTeraTypes,
+                                'stellar_used_types' => (isset($value['stellar_used_types']) ? $value['stellar_used_types'] : []),
 
                                 'dmg_before' => 0
                             ]);
@@ -883,9 +901,23 @@ public static function generateAbility($num){
                             }
                             $pokeUserList['dmg_before'] = 0;
                             if (empty($pokeUserList['tera_type'])) {
-    $pokeUserList['tera_type'] = $pokeUserList['base_type'] ?? 'normal';
-}
-$pokeUserList['tera_active'] = 0;
+                                $pokeUserList['tera_type'] = $pokeUserList['base_type'] ?? 'normal';
+                            }
+                            $pokeUserList['tera_type'] = self::_resolveTeraTypeId($pokeUserList['tera_type']);
+                            $pokeUserList['tera_type_name'] = self::_resolveTeraTypeName($pokeUserList['tera_type']);
+                            if (!isset($pokeUserList['tera_type_source'])) {
+                                $pokeUserList['tera_type_source'] = 'wild';
+                            }
+                            if (!isset($pokeUserList['is_terastallized'])) {
+                                $pokeUserList['is_terastallized'] = 0;
+                            }
+                            if (!isset($pokeUserList['pre_tera_types'])) {
+                                $pokeUserList['pre_tera_types'] = [];
+                            }
+                            if (!isset($pokeUserList['stellar_used_types'])) {
+                                $pokeUserList['stellar_used_types'] = [];
+                            }
+                            $pokeUserList['tera_active'] = (int)($pokeUserList['is_terastallized'] ?? 0);
 
                             $pokeUserInfo['p'.$pokeUserList['id']] = $pokeUserList;
                         }
@@ -901,10 +933,17 @@ $pokeUserList['tera_active'] = 0;
                 }
 
                 if(!empty($pokeUserInfo)){
+                    $teraUsed = 0;
+                    foreach ($pokeUserInfo as $poke) {
+                        if (!empty($poke['is_terastallized'])) {
+                            $teraUsed = 1;
+                            break;
+                        }
+                    }
                     return [
     'target'=>($type == 'pvp' ? 0 : $target),
     'timer'=>[],
-    'tera_used'=>0,
+    'tera_used'=>$teraUsed,
     'tera'=>0,
     'pokeLIst'=>$pokeUserInfo,
     'pokeList'=>$pokeUserInfo,
@@ -924,6 +963,128 @@ $pokeUserList['tera_active'] = 0;
         }
 
         return [];
+    }
+
+    private static function _getTeraTypeMap(): array
+    {
+        return [
+            1 => 'normal',
+            2 => 'fire',
+            3 => 'water',
+            4 => 'electric',
+            5 => 'grass',
+            6 => 'ice',
+            7 => 'fighting',
+            8 => 'poison',
+            9 => 'ground',
+            10 => 'flying',
+            11 => 'psychic',
+            12 => 'bug',
+            13 => 'rock',
+            14 => 'ghost',
+            15 => 'dragon',
+            16 => 'dark',
+            17 => 'steel',
+            18 => 'fairy',
+            19 => 'stellar'
+        ];
+    }
+
+    private static function _resolveTeraTypeName($teraType): string
+    {
+        if (is_numeric($teraType)) {
+            $map = self::_getTeraTypeMap();
+            $id = (int)$teraType;
+            return $map[$id] ?? 'normal';
+        }
+        $teraType = strtolower((string)$teraType);
+        if ($teraType === '') {
+            return 'normal';
+        }
+        return $teraType;
+    }
+
+    private static function _resolveTeraTypeId($teraType): int
+    {
+        if (is_numeric($teraType)) {
+            return (int)$teraType;
+        }
+        $teraType = strtolower((string)$teraType);
+        $map = self::_getTeraTypeMap();
+        foreach ($map as $id => $name) {
+            if ($name === $teraType) {
+                return $id;
+            }
+        }
+        return 1;
+    }
+
+    private static function _normalizeTypeList($types): array
+    {
+        if (is_string($types)) {
+            $types = array_filter(array_map('trim', explode(',', $types)));
+        }
+        if (!is_array($types)) {
+            return [];
+        }
+        $normalized = [];
+        foreach ($types as $type) {
+            $name = self::_resolveTeraTypeName($type);
+            if ($name !== '') {
+                $normalized[] = $name;
+            }
+        }
+        return array_values(array_unique($normalized));
+    }
+
+    private static function _rollWildTeraType($baseType, $baseTypeTwo, $offTypeRate, $allowStellar): int
+    {
+        $baseType = self::_resolveTeraTypeName($baseType ?: 'normal');
+        $baseTypeTwo = self::_resolveTeraTypeName($baseTypeTwo);
+        $offTypeRate = max(0, min(100, (int)$offTypeRate));
+
+        $types = self::_getTeraTypeMap();
+        $baseIds = array_values(array_filter([
+            self::_resolveTeraTypeId($baseType),
+            self::_resolveTeraTypeId($baseTypeTwo)
+        ]));
+        $baseIds = array_values(array_unique($baseIds));
+
+        $roll = mt_rand(1, 100);
+        if ($roll <= $offTypeRate) {
+            $pool = array_keys($types);
+            $pool = array_values(array_diff($pool, $baseIds));
+            if (!$allowStellar) {
+                $pool = array_values(array_diff($pool, [19]));
+            }
+            if (empty($pool)) {
+                $pool = array_keys($types);
+            }
+            return (int)$pool[array_rand($pool)];
+        }
+
+        if (count($baseIds) > 1) {
+            return (int)$baseIds[array_rand($baseIds)];
+        }
+
+        return (int)($baseIds[0] ?? 1);
+    }
+
+    private static function _generateWildTeraType($baseType, $baseTypeTwo = '', $sparkaChance = 0): int
+    {
+        $baseType = self::_resolveTeraTypeName($baseType ?: 'normal');
+        $baseTypeTwo = self::_resolveTeraTypeName($baseTypeTwo);
+
+        $types = self::_getTeraTypeMap();
+        $baseIds = array_values(array_filter([
+            self::_resolveTeraTypeId($baseType),
+            self::_resolveTeraTypeId($baseTypeTwo)
+        ]));
+        $baseIds = array_values(array_unique($baseIds));
+
+        $sparkaChance = max(0, min(100, (int)$sparkaChance));
+        $offTypeRate = min(100, max(0, 20 + (int)floor($sparkaChance / 5)));
+        return self::_rollWildTeraType($baseType, $baseTypeTwo, $offTypeRate, false);
     }
 
 
@@ -1460,6 +1621,49 @@ public static function _generatePve(array $user_info, $location_id, $chance = nu
         $list['catch'] = 0;
     }
 
+    // --- Terastal wild encounter roll ---
+    $teraWild = false;
+    $teraWildForce = false;
+    $teraTypeId = 0;
+    $teraTypeSource = 'wild';
+    $teraConfig = Work::$sql->query('SELECT * FROM `system` LIMIT 1')->fetch_assoc();
+    if (!empty($teraConfig) && !empty($teraConfig['tera_wild_enabled'])) {
+        $teraChance = (int)($teraConfig['tera_wild_chance'] ?? 0);
+        if ($teraChance > 0) {
+            if ($isSbeg) {
+                $sbegMultiplier = (float)($teraConfig['tera_wild_sbeg_multiplier'] ?? $teraConfig['sbeg_multiplier'] ?? 1.0);
+                if ($sbegMultiplier > 0) {
+                    $teraChance = (int)min(10000, round($teraChance * $sbegMultiplier));
+                }
+            }
+
+            $resonanceRemaining = (int)($_SESSION['tera_resonance_remaining'] ?? 0);
+            $resonanceBonus = (int)($_SESSION['tera_resonance_bonus'] ?? 0);
+            if ($resonanceRemaining > 0 && $resonanceBonus > 0) {
+                $teraChance = (int)min(10000, round($teraChance * (1 + ($resonanceBonus / 100))));
+                $_SESSION['tera_resonance_remaining'] = max(0, $resonanceRemaining - 1);
+                if ($_SESSION['tera_resonance_remaining'] === 0) {
+                    unset($_SESSION['tera_resonance_remaining'], $_SESSION['tera_resonance_bonus']);
+                }
+            }
+
+            if (random_int(1, 10000) <= $teraChance) {
+                $teraWild = true;
+                $teraWildForce = !empty($teraConfig['tera_wild_force_terastallized']);
+                $teraOfftypeRate = (int)($teraConfig['tera_wild_offtype_rate'] ?? 0);
+                $allowStellar = !empty($teraConfig['tera_wild_allow_stellar']);
+
+                $baseTypes = Work::$sql->query(
+                    'SELECT `type`, `type_two` FROM `base_pokemons` WHERE `id` = '.(int)$list['basenum'].' LIMIT 1'
+                )->fetch_assoc();
+
+                $baseType = $baseTypes['type'] ?? 'normal';
+                $baseTypeTwo = $baseTypes['type_two'] ?? '';
+                $teraTypeId = self::_rollWildTeraType($baseType, $baseTypeTwo, $teraOfftypeRate, $allowStellar);
+            }
+        }
+    }
+
     // --- Формируем pokeInfo ---
     $pokeInfo = [
         'id'       => 1,
@@ -1473,7 +1677,12 @@ public static function _generatePve(array $user_info, $location_id, $chance = nu
         'id_pok'   => (int)($list['id'] ?? 0),
         'numb'     => (int)$numb,
         'boss'     => (int)$poknum,
-        'type'     => (string)($list['type'] ?? ($isSbeg ? 'sbeg' : ''))
+        'type'     => (string)($list['type'] ?? ($isSbeg ? 'sbeg' : '')),
+        'sparka'   => (int)($list['sparka'] ?? 0),
+        'tera_type'=> ($teraWild ? $teraTypeId : (string)($list['tera_type'] ?? '')),
+        'tera_type_source' => ($teraWild ? $teraTypeSource : ($list['tera_type_source'] ?? 'wild')),
+        'tera_wild' => ($teraWild ? 1 : 0),
+        'is_terastallized' => ($teraWildForce ? 1 : 0)
     ];
     if (!empty($list['atk_list'])) {
         $pokeInfo['atk_list'] = $list['atk_list'];

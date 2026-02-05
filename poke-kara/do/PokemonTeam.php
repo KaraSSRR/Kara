@@ -191,12 +191,17 @@ if ($battleQuery && $battleQuery->num_rows > 0) {
         // --- TERA: атрибуты для отображения тератипа в UI (world.js) ---
         $teraType = (!empty($pokemon['tera_type']) ? $pokemon['tera_type'] : '');
         $teraAttr = ($teraType ? ' data-tera-type="'.htmlspecialchars($teraType, ENT_QUOTES).'"' : '');
-        $teraActiveAttr = (!empty($battlePokemon) && !empty($battlePokemon['tera_active']) ? ' data-tera-active="1"' : '');
+        $isTeraActive = (!empty($battlePokemon) && !empty($battlePokemon['tera_active']));
+        $teraActiveAttr = ($isTeraActive ? ' data-tera-active="1"' : '');
+        $teraBadge = $teraType
+            ? '<div class="TeraBadge'.($isTeraActive ? ' is-active' : '').'" title="Тератип: '.htmlspecialchars($teraType, ENT_QUOTES).'"><img src="/img/world/typs/'.htmlspecialchars($teraType, ENT_QUOTES).'.png" alt="'.htmlspecialchars($teraType, ENT_QUOTES).'"><span>'.htmlspecialchars($teraType, ENT_QUOTES).'</span></div>'
+            : '';
 
 $html = ' <div class="Modif" >'.$tr.$battleIndicators.'</div>'.$sprite.' <div class="Ball '.check_evol($pokemon['id']).' " onclick="pokAction(this,'.$pokemon['id'].','.$pokemon['start_pok'].',false,'.$pokemon['basenum'].')" style="background-image: url(/img/world/items/little/'.$pokemon['ball'].'.png);"></div>
       <div class="Lvl">'.$pokemon['lvl'].'</div>
       '.$item.'
       '.($pokemon['type'] == 'normal' ? '' : '<div class="Unik '.$pokemon['type'].'-color">'.$pokemon['type'].'</div>').'
+      '.$teraBadge.'
       <div class="Name '.$pokemon['type'].'-color">
 					<div class="Text">
 						#'.$fullBasenum.' '. mb_strimwidth($pokemon['name_new'], 0, 22, '...') .'
@@ -647,6 +652,13 @@ case "info":
                 }
             }
         }
+        $teraType = (!empty($pokemon['tera_type']) ? $pokemon['tera_type'] : '');
+        $teraAttr = ($teraType ? ' data-tera-type="'.htmlspecialchars($teraType, ENT_QUOTES).'"' : '');
+        $isTeraActive = (!empty($battlePokemon) && !empty($battlePokemon['tera_active']));
+        $teraActiveAttr = ($isTeraActive ? ' data-tera-active="1"' : '');
+        $teraBadge = $teraType
+            ? '<div class="TeraBadge'.($isTeraActive ? ' is-active' : '').'" title="Тератип: '.htmlspecialchars($teraType, ENT_QUOTES).'"><img src="/img/world/typs/'.htmlspecialchars($teraType, ENT_QUOTES).'.png" alt="'.htmlspecialchars($teraType, ENT_QUOTES).'"><span>'.htmlspecialchars($teraType, ENT_QUOTES).'</span></div>'
+            : '';
         
         $html = '
         <div class="Info">
@@ -658,6 +670,7 @@ case "info":
                     <div class="Lvl">'.$pokemon['lvl'].'</div>
                     '.$item.'
                     '.($pokemon['type'] == 'normal' ? '' : '<div class="Unik '.$pokemon['type'].'-color">'.$pokemon['type'].'</div>').'
+                    '.$teraBadge.'
                     <div class="Name '.$pokemon['type'].'-color">
                         <div class="Text">
                             #'.$fullBasenum.' '. mb_strimwidth($pokemon['name_new'], 0, 22, '...') .'
