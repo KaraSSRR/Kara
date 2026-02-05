@@ -4773,7 +4773,20 @@ var GameBattle = function(info){
       .Battle > .Content > .Log{
         background:#ffffff; height: 225px; border:1px solid #e4e4e4; border-top:none; overflow:auto;
       }
-      .Battle > .Content > .Log > .Wrap > .Step{ margin:6px 0; border-bottom:1px solid #eef1f5; padding:10px; }
+      .Battle > .Content > .Log > .Wrap{ padding:8px 10px 12px; }
+      .Battle > .Content > .Log > .Wrap > .Step{
+        margin:8px 0; border:1px solid #eef1f5; border-radius:12px; padding:10px;
+        background:#f8fafc; box-shadow:0 6px 14px rgba(15,23,42,.05);
+      }
+      .Battle > .Content > .Log > .Wrap > .Step.latest{
+        border-color:#c7d2fe; background:#eef2ff; box-shadow:0 10px 22px rgba(79,70,229,.12);
+      }
+      .Battle > .Content > .Log > .Wrap > .Step > .Round{ font-weight:800; color:#334155; margin-bottom:6px; }
+      .Battle > .Content > .Log > .Wrap > .Step > .Process{
+        display:flex; flex-wrap:wrap; gap:4px 6px; line-height:1.4; color:#1f2937;
+      }
+      .Battle > .Content > .Log > .Wrap > .Step > .Process > span{ word-break:break-word; }
+      .Battle > .Content > .Log > .Wrap > .Step > .Process:not(:last-child){ margin-bottom:6px; }
 
       /* team badge в зоне */
       .TeamBadgeWrap.mobile{ display:flex; justify-content:center; margin-top:6px }
@@ -4890,7 +4903,10 @@ var GameBattle = function(info){
       .pkx-battle-v2 .MoveBox .Move .img img{ width:24px; height:24px; object-fit:contain; }
 .pkx-battle-v2 .MoveBox .Move{ position:relative; padding-right:36px; }
 .pkx-battle-v2 .MoveBox .Move .MoveInfo{ display:flex; flex-direction:column; min-width:0; flex:1 1 auto; }
-.pkx-battle-v2 .MoveBox .Move .MoveInfo .Name{ font-weight:900; color:var(--pkx-txt); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.pkx-battle-v2 .MoveBox .Move .MoveInfo .Name,
+.pkx-battle-v2 .MoveBox .Move .nameAtk{
+  display:block; font-weight:900; color:var(--pkx-txt); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
 .pkx-battle-v2 .MoveBox .Move .MoveInfo .PP{ font-size:11px; font-weight:800; color:var(--pkx-muted); margin-top:2px; }
 .pkx-battle-v2 .MoveBox .Move .key{
   position:absolute; right:8px; top:8px;
@@ -5123,7 +5139,10 @@ var GameBattle = function(info){
       }
       .Battle.pkx-battle-v3 .MoveBox .Move .img img{ width:28px; height:28px; object-fit:contain; }
       .Battle.pkx-battle-v3 .MoveBox .Move .MoveInfo{ display:flex; flex-direction:column; min-width:0; flex:1 1 auto; }
-      .Battle.pkx-battle-v3 .MoveBox .Move .MoveInfo .Name{ font-weight:900; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+      .Battle.pkx-battle-v3 .MoveBox .Move .MoveInfo .Name,
+      .Battle.pkx-battle-v3 .MoveBox .Move .nameAtk{
+        display:block; font-weight:900; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:#0f172a;
+      }
       .Battle.pkx-battle-v3 .MoveBox .Move .MoveInfo .PP{ margin-top:3px; font-size:12px; font-weight:800; color:#6b7280; }
       .Battle.pkx-battle-v3 .MoveBox .Move.pp-low .MoveInfo .PP{ color:#b42318; }
       .Battle.pkx-battle-v3 .MoveBox .Move.Off{ opacity:.45; cursor:not-allowed; transform:none; }
@@ -6338,6 +6357,7 @@ var GameBattle = function(info){
             $log.append($wrap);
           }
           $wrap.html(newLog);
+          $wrap.find('.Step').removeClass('latest').last().addClass('latest');
           _lastBattleLog = newLog;
 
           // Если пользователь не внизу — отмечаем новые события
@@ -6687,14 +6707,18 @@ var GameBattle = function(info){
               try { curPP = parseInt(pp_atk[val['attack_num']], 10) || 0; } catch(e){ curPP = 0; }
               var maxPP = parseInt(val['pp'], 10) || 0;
 
-              var $mv = $('<div />', {'class':'Move', 'data-hotkey': hk, 'title':'['+hk+'] ' + (val['name']||'')})
+              var moveName = val['name'] || val['name_ru'] || val['nameRus'] || val['title'] || val['atk_name'] || val['attack_name'] || val['ru'] || val['rus'] || val['text'] || '';
+              moveName = String(moveName || '').trim();
+              if (!moveName) moveName = 'Неизвестный приём';
+
+              var $mv = $('<div />', {'class':'Move', 'data-hotkey': hk, 'title':'['+hk+'] ' + moveName})
                 .append(
                   $('<div/>', {'class':'key', text: hk}),
                   $('<div/>', {'class':'img'}).append(
                     $('<img/>', {src:'/img/world/typs/' + (val['type'] || 'empty') + '.png', alt:(val['type']||'')})
                   ),
                   $('<div/>', {'class':'MoveInfo'}).append(
-                    $('<div/>', {'class':'Name MoveCategory' + atkc, text: (val['name'] || '')}),
+                    $('<div/>', {'class':'Name MoveCategory' + atkc, text: moveName}),
                     $('<div/>', {'class':'PP'}).text(curPP + '/' + maxPP + ' pp')
                   )
                 );
@@ -6720,8 +6744,14 @@ var GameBattle = function(info){
             })()
           );
         });
-        _element_poke_info_my_move.empty().append(tpl);
-      } else {
+        if (tpl.length) {
+          _element_poke_info_my_move.empty().append(tpl);
+        } else if (typeof info['atkList'] !== 'undefined') {
+          _element_poke_info_my_move.empty();
+        }
+      } else if (info['atk1'] || info['atk2'] || info['atk3'] || info['atk4']) {
+        _element_poke_info_my_move.html((info['atk1']||'') + (info['atk2']||'') + (info['atk3']||'') + (info['atk4']||''));
+      } else if (typeof info['atkList'] !== 'undefined') {
         _element_poke_info_my_move.empty();
       }
     }
@@ -7167,6 +7197,16 @@ var GameBattle = function(info){
     var A = left.map(function(x){ return norm(x,'A'); }).filter(Boolean);
     var B = right.map(function(x){ return norm(x,'B'); }).filter(Boolean);
 
+    function normLimit(val){
+      var n = parseInt(val, 10);
+      return (Number.isFinite(n) && n > 0) ? n : null;
+    }
+    var limitA = normLimit((t && (t.limitA || t.maxA || t.teamLimitA || t.slotsA || t.capacityA)) || info.team_limit_a || info.teamLimitA || null);
+    var limitB = normLimit((t && (t.limitB || t.maxB || t.teamLimitB || t.slotsB || t.capacityB)) || info.team_limit_b || info.teamLimitB || null);
+    var limitBoth = normLimit((t && (t.limit || t.max || t.teamLimit || t.slots || t.capacity)) || info.team_limit || info.teamLimit || null);
+    if (!limitA && limitBoth) limitA = limitBoth;
+    if (!limitB && limitBoth) limitB = limitBoth;
+
     var nameA = (t && (t.nameA || t.teamALabel || t.leftLabel  || 'Сторона A'));
     var nameB = (t && (t.nameB || t.teamBLabel || t.rightLabel || 'Сторона B'));
     var token = (info.team_token || (t && (t.token || t.invite || t.code))) || null;
@@ -7185,7 +7225,18 @@ var GameBattle = function(info){
       organizer = pick(A) || pick(B) || null;
     }
 
-    return { A, B, nameA, nameB, token, isTeam:true, organizer: organizer, mySide: mySide };
+    if (!mySide && info.my && info.my.id) {
+      var myId = String(info.my.id);
+      if (A.some(function(u){ return u.id && String(u.id) === myId; })) mySide = 'A';
+      else if (B.some(function(u){ return u.id && String(u.id) === myId; })) mySide = 'B';
+    }
+
+    return {
+      A, B, nameA, nameB, token,
+      limitA: limitA, limitB: limitB,
+      countA: A.length, countB: B.length,
+      isTeam:true, organizer: organizer, mySide: mySide
+    };
   };
 
   // ---------- Синхронизация бейджей рядом с «Раунд» ----------
@@ -7297,6 +7348,7 @@ $('#battle-team-badge')
         '.pkx-teamcfg-empty{padding:8px;border:1px dashed #d9dff7;background:#fff;border-radius:10px;color:#6f7b95;font-size:12px;text-align:center}'+
         '.pkx-teamcfg-footer{display:flex;gap:8px;justify-content:flex-end;padding:10px;border-top:1px solid #eaeefe;background:#fbfbfe}'+
         '.pkx-teamcfg-btn{border:1px solid #d7dff9;background:#f1f5ff;border-radius:10px;padding:8px 10px;font-weight:700;color:#3659a7;cursor:pointer}'+
+        '.pkx-teamcfg-btn[disabled]{opacity:.55;cursor:default}'+
         '.pkx-teamcfg-btn:hover{background:#e6edff}'+
         '.pkx-teamcfg-badge{display:inline-block;margin-left:8px;padding:2px 8px;border-radius:999px;background:#e9f2ff;border:1px solid #cfe2ff;color:#0b5ed7;font-weight:700;font-size:12px}'+
         '.pkx-teamcfg-crown{margin-left:6px;color:#c58f18}'+
@@ -7353,8 +7405,10 @@ $('#battle-team-badge')
       ));
       return $c;
     }
-    function fillCol($col, title, list){
-      $('<h4/>', {text:title}).appendTo($col);
+    function fillCol($col, title, list, limit){
+      var count = (list && list.length) ? list.length : 0;
+      var suffix = (limit ? (' (' + count + '/' + limit + ')') : (' (' + count + ')'));
+      $('<h4/>', {text:title + suffix}).appendTo($col);
       if (list && list.length) {
         list.forEach(function(u){ $col.append(userCard(u)); });
       } else {
@@ -7364,11 +7418,43 @@ $('#battle-team-badge')
 
     var $colA = $('<div/>', {'class':'pkx-teamcfg-col'}).appendTo($grid);
     var $colB = $('<div/>', {'class':'pkx-teamcfg-col'}).appendTo($grid);
-    fillCol($colA, (team && team.nameA) || 'Сторона A', (team && team.A) || []);
-    fillCol($colB, (team && team.nameB) || 'Сторона B', (team && team.B) || []);
+    fillCol($colA, (team && team.nameA) || 'Сторона A', (team && team.A) || [], team && team.limitA);
+    fillCol($colB, (team && team.nameB) || 'Сторона B', (team && team.B) || [], team && team.limitB);
 
     var $footer = $('<div/>', {'class':'pkx-teamcfg-footer'}).appendTo($root);
-    if (!isTeam && window.BATTLE_SUPPORT_TEAM_CREATE && !_isPvE(info)) {
+    var mySide = (team && team.mySide) || null;
+    var limitA = team && team.limitA;
+    var limitB = team && team.limitB;
+    var countA = (team && typeof team.countA !== 'undefined') ? team.countA : ((team && team.A) ? team.A.length : 0);
+    var countB = (team && typeof team.countB !== 'undefined') ? team.countB : ((team && team.B) ? team.B.length : 0);
+    var isFullA = !!(limitA && countA >= limitA);
+    var isFullB = !!(limitB && countB >= limitB);
+
+    if (isTeam && !mySide && !_isPvE(info)) {
+      var selfJoin = this;
+      $('<button/>', {'class':'pkx-teamcfg-btn', text:'Вступить за сторону A', disabled: isFullA})
+        .appendTo($footer)
+        .on('click', function(){
+          if (isFullA) return;
+          selfJoin._action({action:'join_team', side: 1}, function(resp){
+            if (resp && resp.battleInfo) selfJoin._update(resp.battleInfo);
+            else selfJoin.refresh();
+            if (window.Game?.notifications?.main) Game.notifications.main('Вы присоединились к стороне A.', 'success');
+          });
+          $root.remove();
+        });
+      $('<button/>', {'class':'pkx-teamcfg-btn', text:'Вступить за сторону B', disabled: isFullB})
+        .appendTo($footer)
+        .on('click', function(){
+          if (isFullB) return;
+          selfJoin._action({action:'join_team', side: 2}, function(resp){
+            if (resp && resp.battleInfo) selfJoin._update(resp.battleInfo);
+            else selfJoin.refresh();
+            if (window.Game?.notifications?.main) Game.notifications.main('Вы присоединились к стороне B.', 'success');
+          });
+          $root.remove();
+        });
+    } else if (!isTeam && window.BATTLE_SUPPORT_TEAM_CREATE && !_isPvE(info)) {
       var self = this;
       $('<button/>', {'class':'pkx-teamcfg-btn', text:'Сделать командным'})
         .appendTo($footer)
