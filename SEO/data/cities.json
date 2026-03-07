@@ -1,0 +1,105 @@
+[
+  {
+    "id": "berlin",
+    "slug": "berlin",
+    "name": "Berlin",
+    "countryId": "de",
+    "populationBucket": "xl",
+    "costOfLivingIndex": 82,
+    "searchPriority": 0.95,
+    "supportedProfessionIds": [
+      "react-developer",
+      "backend-engineer",
+      "data-scientist",
+      "devops-engineer",
+      "product-manager",
+      "ux-designer"
+    ],
+    "introBlockId": "city-berlin-intro",
+    "costOfLivingBlockId": "city-generic-cost-of-living",
+    "marketTrendsBlockId": "city-berlin-market-trends",
+    "faqTemplateIds": [
+      "city-generic-salary-vs-cost",
+      "city-berlin-tech-market"
+    ]
+  },
+  {
+    "id": "munich",
+    "slug": "munich",
+    "name": "Munich",
+    "countryId": "de",
+    "populationBucket": "l",
+    "costOfLivingIndex": 90,
+    "searchPriority": 0.85,
+    "supportedProfessionIds": [
+      "react-developer",
+      "backend-engineer",
+      "data-scientist",
+      "devops-engineer",
+      "qa-engineer"
+    ],
+    "introBlockId": "city-munich-intro",
+    "costOfLivingBlockId": "city-generic-cost-of-living",
+    "marketTrendsBlockId": "city-munich-market-trends",
+    "faqTemplateIds": ["city-generic-salary-vs-cost"]
+  },
+  {
+    "id": "hamburg",
+    "slug": "hamburg",
+    "name": "Hamburg",
+    "countryId": "de",
+    "populationBucket": "l",
+    "costOfLivingIndex": 84,
+    "searchPriority": 0.78,
+    "supportedProfessionIds": [
+      "react-developer",
+      "backend-engineer",
+      "product-manager",
+      "marketing-manager"
+    ],
+    "introBlockId": "city-hamburg-intro",
+    "costOfLivingBlockId": "city-generic-cost-of-living",
+    "marketTrendsBlockId": "city-hamburg-market-trends",
+    "faqTemplateIds": ["city-generic-salary-vs-cost"]
+  },
+  {
+    "id": "cologne",
+    "slug": "cologne",
+    "name": "Cologne",
+    "countryId": "de",
+    "populationBucket": "m",
+    "costOfLivingIndex": 76,
+    "searchPriority": 0.65,
+    "supportedProfessionIds": [
+      "marketing-manager",
+      "hr-specialist",
+      "content-marketer",
+      "qa-engineer"
+    ],
+    "introBlockId": "city-cologne-intro",
+    "costOfLivingBlockId": "city-generic-cost-of-living",
+    "marketTrendsBlockId": "city-cologne-market-trends",
+    "faqTemplateIds": ["city-generic-salary-vs-cost"]
+  },
+  {
+    "id": "frankfurt",
+    "slug": "frankfurt",
+    "name": "Frankfurt",
+    "countryId": "de",
+    "populationBucket": "m",
+    "costOfLivingIndex": 88,
+    "searchPriority": 0.8,
+    "supportedProfessionIds": [
+      "backend-engineer",
+      "data-scientist",
+      "product-manager",
+      "hr-specialist",
+      "content-marketer"
+    ],
+    "introBlockId": "city-frankfurt-intro",
+    "costOfLivingBlockId": "city-generic-cost-of-living",
+    "marketTrendsBlockId": "city-frankfurt-market-trends",
+    "faqTemplateIds": ["city-generic-salary-vs-cost"]
+  }
+]
+

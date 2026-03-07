@@ -1,0 +1,223 @@
+[
+  {
+    "id": "react-developer",
+    "slug": "react-developer",
+    "name": "React Developer",
+    "category": "developer",
+    "searchPriorityByCountry": {
+      "de": 0.92
+    },
+    "levels": [
+      { "id": "junior", "label": "Junior", "multiplier": 0.75 },
+      { "id": "mid", "label": "Mid-level", "multiplier": 1 },
+      { "id": "senior", "label": "Senior", "multiplier": 1.3 }
+    ],
+    "synonyms": ["Frontend Developer", "Frontend Engineer", "JavaScript Developer"],
+    "introBlockId": "profession-react-intro",
+    "responsibilitiesBlockId": "profession-react-responsibilities",
+    "skillsBlockId": "profession-react-skills",
+    "faqTemplateIds": [
+      "profession-developer-remote-vs-onsite",
+      "profession-developer-salary-factors"
+    ]
+  },
+  {
+    "id": "backend-engineer",
+    "slug": "backend-engineer",
+    "name": "Backend Engineer",
+    "category": "developer",
+    "searchPriorityByCountry": {
+      "de": 0.88
+    },
+    "levels": [
+      { "id": "junior", "label": "Junior", "multiplier": 0.78 },
+      { "id": "mid", "label": "Mid-level", "multiplier": 1 },
+      { "id": "senior", "label": "Senior", "multiplier": 1.32 }
+    ],
+    "synonyms": ["Backend Developer", "Server-side Engineer"],
+    "introBlockId": "profession-backend-intro",
+    "responsibilitiesBlockId": "profession-backend-responsibilities",
+    "skillsBlockId": "profession-backend-skills",
+    "faqTemplateIds": [
+      "profession-developer-remote-vs-onsite",
+      "profession-developer-salary-factors"
+    ]
+  },
+  {
+    "id": "data-scientist",
+    "slug": "data-scientist",
+    "name": "Data Scientist",
+    "category": "data",
+    "searchPriorityByCountry": {
+      "de": 0.86
+    },
+    "levels": [
+      { "id": "junior", "label": "Junior", "multiplier": 0.8 },
+      { "id": "mid", "label": "Mid-level", "multiplier": 1 },
+      { "id": "senior", "label": "Senior", "multiplier": 1.35 }
+    ],
+    "synonyms": ["Machine Learning Engineer", "Data Analyst (senior)"],
+    "introBlockId": "profession-data-scientist-intro",
+    "responsibilitiesBlockId": "profession-data-scientist-responsibilities",
+    "skillsBlockId": "profession-data-scientist-skills",
+    "faqTemplateIds": [
+      "profession-data-remote-vs-onsite",
+      "profession-data-salary-factors"
+    ]
+  },
+  {
+    "id": "product-manager",
+    "slug": "product-manager",
+    "name": "Product Manager",
+    "category": "product",
+    "searchPriorityByCountry": {
+      "de": 0.83
+    },
+    "levels": [
+      { "id": "junior", "label": "Associate", "multiplier": 0.8 },
+      { "id": "mid", "label": "Product Manager", "multiplier": 1 },
+      { "id": "senior", "label": "Senior / Lead", "multiplier": 1.3 }
+    ],
+    "synonyms": ["Digital Product Manager", "Product Owner"],
+    "introBlockId": "profession-pm-intro",
+    "responsibilitiesBlockId": "profession-pm-responsibilities",
+    "skillsBlockId": "profession-pm-skills",
+    "faqTemplateIds": [
+      "profession-pm-salary-factors",
+      "profession-pm-remote-vs-onsite"
+    ]
+  },
+  {
+    "id": "marketing-manager",
+    "slug": "marketing-manager",
+    "name": "Marketing Manager",
+    "category": "marketing",
+    "searchPriorityByCountry": {
+      "de": 0.78
+    },
+    "levels": [
+      { "id": "junior", "label": "Specialist", "multiplier": 0.8 },
+      { "id": "mid", "label": "Manager", "multiplier": 1 },
+      { "id": "senior", "label": "Head of Marketing", "multiplier": 1.28 }
+    ],
+    "synonyms": ["Digital Marketing Manager", "Online Marketing Lead"],
+    "introBlockId": "profession-marketing-intro",
+    "responsibilitiesBlockId": "profession-marketing-responsibilities",
+    "skillsBlockId": "profession-marketing-skills",
+    "faqTemplateIds": [
+      "profession-marketing-channels-vs-salary",
+      "profession-marketing-remote-vs-onsite"
+    ]
+  },
+  {
+    "id": "hr-specialist",
+    "slug": "hr-specialist",
+    "name": "HR Specialist",
+    "category": "hr",
+    "searchPriorityByCountry": {
+      "de": 0.72
+    },
+    "levels": [
+      { "id": "junior", "label": "HR Assistant", "multiplier": 0.78 },
+      { "id": "mid", "label": "HR Specialist", "multiplier": 1 },
+      { "id": "senior", "label": "HR Business Partner", "multiplier": 1.25 }
+    ],
+    "synonyms": ["People Operations Specialist", "HR Generalist"],
+    "introBlockId": "profession-hr-intro",
+    "responsibilitiesBlockId": "profession-hr-responsibilities",
+    "skillsBlockId": "profession-hr-skills",
+    "faqTemplateIds": [
+      "profession-hr-salary-factors",
+      "profession-hr-remote-vs-onsite"
+    ]
+  },
+  {
+    "id": "devops-engineer",
+    "slug": "devops-engineer",
+    "name": "DevOps Engineer",
+    "category": "developer",
+    "searchPriorityByCountry": {
+      "de": 0.85
+    },
+    "levels": [
+      { "id": "junior", "label": "Junior", "multiplier": 0.8 },
+      { "id": "mid", "label": "Mid-level", "multiplier": 1 },
+      { "id": "senior", "label": "Senior", "multiplier": 1.33 }
+    ],
+    "synonyms": ["Site Reliability Engineer", "Platform Engineer"],
+    "introBlockId": "profession-devops-intro",
+    "responsibilitiesBlockId": "profession-devops-responsibilities",
+    "skillsBlockId": "profession-devops-skills",
+    "faqTemplateIds": [
+      "profession-developer-remote-vs-onsite",
+      "profession-developer-salary-factors"
+    ]
+  },
+  {
+    "id": "ux-designer",
+    "slug": "ux-designer",
+    "name": "UX Designer",
+    "category": "design",
+    "searchPriorityByCountry": {
+      "de": 0.77
+    },
+    "levels": [
+      { "id": "junior", "label": "Junior", "multiplier": 0.8 },
+      { "id": "mid", "label": "UX Designer", "multiplier": 1 },
+      { "id": "senior", "label": "Senior UX", "multiplier": 1.27 }
+    ],
+    "synonyms": ["Product Designer", "User Experience Designer"],
+    "introBlockId": "profession-ux-intro",
+    "responsibilitiesBlockId": "profession-ux-responsibilities",
+    "skillsBlockId": "profession-ux-skills",
+    "faqTemplateIds": [
+      "profession-ux-salary-factors",
+      "profession-ux-remote-vs-onsite"
+    ]
+  },
+  {
+    "id": "qa-engineer",
+    "slug": "qa-engineer",
+    "name": "QA Engineer",
+    "category": "quality",
+    "searchPriorityByCountry": {
+      "de": 0.74
+    },
+    "levels": [
+      { "id": "junior", "label": "Junior QA", "multiplier": 0.8 },
+      { "id": "mid", "label": "QA Engineer", "multiplier": 1 },
+      { "id": "senior", "label": "Senior QA", "multiplier": 1.23 }
+    ],
+    "synonyms": ["Test Engineer", "Quality Assurance Engineer"],
+    "introBlockId": "profession-qa-intro",
+    "responsibilitiesBlockId": "profession-qa-responsibilities",
+    "skillsBlockId": "profession-qa-skills",
+    "faqTemplateIds": [
+      "profession-qa-salary-factors",
+      "profession-qa-remote-vs-onsite"
+    ]
+  },
+  {
+    "id": "content-marketer",
+    "slug": "content-marketer",
+    "name": "Content Marketer",
+    "category": "marketing",
+    "searchPriorityByCountry": {
+      "de": 0.7
+    },
+    "levels": [
+      { "id": "junior", "label": "Content Writer", "multiplier": 0.78 },
+      { "id": "mid", "label": "Content Marketer", "multiplier": 1 },
+      { "id": "senior", "label": "Content Lead", "multiplier": 1.22 }
+    ],
+    "synonyms": ["Content Specialist", "SEO Content Marketer"],
+    "introBlockId": "profession-content-intro",
+    "responsibilitiesBlockId": "profession-content-responsibilities",
+    "skillsBlockId": "profession-content-skills",
+    "faqTemplateIds": [
+      "profession-marketing-channels-vs-salary",
+      "profession-marketing-remote-vs-onsite"
+    ]
+  }
+]
+

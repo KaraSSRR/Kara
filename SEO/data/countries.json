@@ -1,0 +1,40 @@
+[
+  {
+    "id": "de",
+    "slug": "germany",
+    "name": "Germany",
+    "isoCode": "DE",
+    "currencyCode": "EUR",
+    "currencySymbol": "€",
+    "locale": "de-DE",
+    "taxConfigId": "de-2026",
+    "searchPriority": 0.9,
+    "hasLocalData": true,
+    "defaultCityId": "berlin",
+    "seoTitleTemplate": "{{countryName}} salary calculator {{year}} – gross & net",
+    "seoDescriptionTemplate": "Compare gross and net salary in {{countryName}} for {{year}} with clear tax explanations and local context.",
+    "faqTemplateIds": [
+      "global-gross-net-basics",
+      "country-de-taxes",
+      "country-de-salary-frequency"
+    ],
+    "primaryTopics": ["developers", "marketing", "hr", "gross-vs-net"]
+  },
+  {
+    "id": "nl",
+    "slug": "netherlands",
+    "name": "Netherlands",
+    "isoCode": "NL",
+    "currencyCode": "EUR",
+    "currencySymbol": "€",
+    "locale": "nl-NL",
+    "taxConfigId": "nl-2026",
+    "searchPriority": 0.7,
+    "hasLocalData": false,
+    "seoTitleTemplate": "{{countryName}} salary calculator {{year}} – gross & net",
+    "seoDescriptionTemplate": "Estimate gross and net salary in {{countryName}} for {{year}} with a simplified model of local taxes and contributions.",
+    "faqTemplateIds": ["global-gross-net-basics"],
+    "primaryTopics": ["developers", "gross-vs-net"]
+  }
+]
+

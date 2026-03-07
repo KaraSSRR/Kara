@@ -1,0 +1,244 @@
+[
+  {
+    "id": "country-de-intro",
+    "type": "intro",
+    "appliesTo": {
+      "pageTypes": ["country"]
+    },
+    "tokens": ["countryName", "currencyCode"],
+    "bodyVariants": [
+      {
+        "id": "country-de-intro-a",
+        "text": "{{countryName}} остаётся одним из самых конкурентных рынков труда в Европе. Наш калькулятор помогает быстро понять, как меняется ваша зарплата после налогов и обязательных взносов, чтобы сравнивать офферы и планировать переезд.",
+        "weight": 1
+      },
+      {
+        "id": "country-de-intro-b",
+        "text": "Если вы рассматриваете работу в {{countryName}}, важно считать не только «грязную» зарплату, но и нетто-доход. На этой странице собраны актуальные диапазоны по зарплатам и интерактивный калькулятор с учётом местного налогообложения.",
+        "weight": 1
+      }
+    ]
+  },
+  {
+    "id": "city-how-effective-rate-works",
+    "type": "explainer",
+    "appliesTo": {
+      "pageTypes": ["city"]
+    },
+    "tokens": ["cityName", "countryName"],
+    "bodyVariants": [
+      {
+        "id": "city-effective-rate-a",
+        "text": "Эффективная ставка налога для {{cityName}} показывает, какая доля дохода уходит на налоги и взносы с учётом местных условий. Это удобный ориентир, чтобы сравнивать города между собой, даже если номинальные ставки кажутся похожими.",
+        "weight": 1
+      }
+    ]
+  },
+  {
+    "id": "profession-how-employer-cost-works",
+    "type": "explainer",
+    "appliesTo": {
+      "pageTypes": ["profession"]
+    },
+    "tokens": ["professionName"],
+    "bodyVariants": [
+      {
+        "id": "profession-employer-cost-a",
+        "text": "Показатель employer cost для роли {{professionName}} помогает увидеть, сколько реально стоит специалист компании с учётом налогов и взносов. Это важно при переговорах: иногда работодатель готов поднять часть компенсации в бенефитах, не увеличивая базовый оклад.",
+        "weight": 1
+      }
+    ]
+  },
+  {
+    "id": "profession-city-market-balance",
+    "type": "local-market-context",
+    "appliesTo": {
+      "pageTypes": ["profession-city"]
+    },
+    "tokens": ["professionName", "cityName", "countryName"],
+    "bodyVariants": [
+      {
+        "id": "profession-city-market-a",
+        "text": "Для роли {{professionName}} в {{cityName}} важно учитывать не только вилки по зарплатам, но и баланс спроса и предложения на рынке. В одних городах {{countryName}} конкуренция за специалистов выше, поэтому работодатели чаще идут на верхнюю часть диапазона, в других — ставка делается на стабильность и бонусы.",
+        "weight": 1
+      }
+    ]
+  },
+  {
+    "id": "city-generic-cost-of-living",
+    "type": "explainer",
+    "appliesTo": {
+      "pageTypes": ["city", "profession-city"]
+    },
+    "tokens": ["cityName", "countryName"],
+    "bodyVariants": [
+      {
+        "id": "city-cost-a",
+        "text": "Даже в пределах одной страны города сильно отличаются по стоимости жизни. В {{cityName}} структура расходов может быть иной, чем в других регионах {{countryName}}: аренда, транспорт, досуг и налоги меняют реальный уровень дохода.",
+        "weight": 1
+      },
+      {
+        "id": "city-cost-b",
+        "text": "Когда вы оцениваете предложение в {{cityName}}, полезно смотреть не только на сумму в оффере, но и на то, сколько останется после вычетов и типичных ежемесячных расходов. Наши блоки с пояснениями помогают сложить эту картинку целиком.",
+        "weight": 1
+      }
+    ]
+  },
+  {
+    "id": "city-berlin-intro",
+    "type": "intro",
+    "appliesTo": {
+      "pageTypes": ["city", "profession-city"],
+      "cityIds": ["berlin"]
+    },
+    "tokens": ["cityName", "countryName"],
+    "bodyVariants": [
+      {
+        "id": "berlin-intro-a",
+        "text": "{{cityName}} — один из самых динамичных городов {{countryName}} для работы в технологиях и креативных индустриях. Здесь много продуктовых команд, поэтому зарплатные диапазоны для digital-ролей шире, чем в среднем по стране.",
+        "weight": 1
+      }
+    ]
+  },
+  {
+    "id": "city-munich-intro",
+    "type": "intro",
+    "appliesTo": {
+      "pageTypes": ["city", "profession-city"],
+      "cityIds": ["munich"]
+    },
+    "tokens": ["cityName", "countryName"],
+    "bodyVariants": [
+      {
+        "id": "munich-intro-a",
+        "text": "{{cityName}} сочетает сильный корпоративный сектор и высокую стоимость жизни. Для технических и продуктовых ролей базовый оклад часто компенсируется дополнительными бонусами и пакетами льгот.",
+        "weight": 1
+      }
+    ]
+  },
+  {
+    "id": "city-hamburg-intro",
+    "type": "intro",
+    "appliesTo": {
+      "pageTypes": ["city", "profession-city"],
+      "cityIds": ["hamburg"]
+    },
+    "tokens": ["cityName", "countryName"],
+    "bodyVariants": [
+      {
+        "id": "hamburg-intro-a",
+        "text": "{{cityName}} исторически силён в логистике и медиа, но за последние годы здесь вырос и технологический сектор. Это отражается на структуре спроса и зарплатах для специалистов в цифровых ролях.",
+        "weight": 1
+      }
+    ]
+  },
+  {
+    "id": "city-cologne-intro",
+    "type": "intro",
+    "appliesTo": {
+      "pageTypes": ["city", "profession-city"],
+      "cityIds": ["cologne"]
+    },
+    "tokens": ["cityName", "countryName"],
+    "bodyVariants": [
+      {
+        "id": "cologne-intro-a",
+        "text": "{{cityName}} сочетает корпоративный и креативный рынки. Для маркетинга и HR-ролей здесь доступны как крупные корпорации, так и медийные компании, что формирует широкий коридор по зарплатам.",
+        "weight": 1
+      }
+    ]
+  },
+  {
+    "id": "city-frankfurt-intro",
+    "type": "intro",
+    "appliesTo": {
+      "pageTypes": ["city", "profession-city"],
+      "cityIds": ["frankfurt"]
+    },
+    "tokens": ["cityName", "countryName"],
+    "bodyVariants": [
+      {
+        "id": "frankfurt-intro-a",
+        "text": "{{cityName}} — финансовый центр {{countryName}}, где высок спрос на специалистов в данных, бекенде и управлении продуктами для финтеха. Это отражается на вилках для соответствующих профессий.",
+        "weight": 1
+      }
+    ]
+  },
+  {
+    "id": "profession-react-intro",
+    "type": "intro",
+    "appliesTo": {
+      "pageTypes": ["profession", "profession-city"],
+      "professionIds": ["react-developer"]
+    },
+    "tokens": ["professionName"],
+    "bodyVariants": [
+      {
+        "id": "react-intro-a",
+        "text": "{{professionName}} остаются востребованными благодаря широкому использованию React в продуктовых командах. Вилка по зарплатам сильно зависит от стека, владения TypeScript и умения работать с дизайнерами и бэкенд-командой.",
+        "weight": 1
+      }
+    ]
+  },
+  {
+    "id": "profession-react-responsibilities",
+    "type": "explainer",
+    "appliesTo": {
+      "pageTypes": ["profession", "profession-city"],
+      "professionIds": ["react-developer"]
+    },
+    "tokens": ["professionName"],
+    "bodyVariants": [
+      {
+        "id": "react-resp-a",
+        "text": "В задачи {{professionName}} входят разработка интерфейсов, работа с состоянием приложения, оптимизация производительности и тесное взаимодействие с дизайнерами. Чем сложнее продукт и выше требования к качеству UI, тем выше и компенсация.",
+        "weight": 1
+      }
+    ]
+  },
+  {
+    "id": "generic-how-calculator-works",
+    "type": "how-it-works",
+    "appliesTo": {
+      "pageTypes": [
+        "home",
+        "generic-calculator",
+        "gross-to-net",
+        "net-to-gross",
+        "country",
+        "city",
+        "profession",
+        "profession-city"
+      ]
+    },
+    "tokens": [],
+    "bodyVariants": [
+      {
+        "id": "how-it-works-a",
+        "text": "Калькулятор разбивает вашу зарплату на несколько шагов: сначала нормализует период (месяц или год), затем применяет актуальные налоговые ставки и взносы, после чего показывает нетто-результат и эффективную ставку налога. Формулы вынесены в отдельный слой, чтобы их можно было обновлять без изменения контента.",
+        "weight": 1
+      },
+      {
+        "id": "how-it-works-b",
+        "text": "Мы разделяем логику расчёта и текстовые пояснения. Это означает, что при изменении налоговых правил достаточно обновить конфигурацию расчёта — объяснения на страницах останутся консистентными и продолжат отражать общий принцип работы системы.",
+        "weight": 1
+      }
+    ]
+  },
+  {
+    "id": "generic-cta-explore-cities-professions",
+    "type": "cta",
+    "appliesTo": {
+      "pageTypes": ["home", "country"]
+    },
+    "tokens": [],
+    "bodyVariants": [
+      {
+        "id": "cta-a",
+        "text": "После базового расчёта посмотрите, как меняется картина по конкретным городам и профессиям — переходите на детальные страницы с локальными пояснениями и примерами.",
+        "weight": 1
+      }
+    ]
+  }
+]
+
