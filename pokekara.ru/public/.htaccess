@@ -1,0 +1,8 @@
+RewriteEngine On
+
+# If you deploy under a subfolder (e.g. /v2), set RewriteBase accordingly:
+# RewriteBase /v2/public/
+
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ index.php [QSA,L]
